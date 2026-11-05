@@ -7,11 +7,11 @@ services:
     plan: free
     # Closest to Vietnam; pair with Neon region AWS ap-southeast-1 (Singapore).
     region: singapore
-    # rootDir limits auto-deploys to changes under backend/. dockerfilePath
-    # and dockerContext are relative to the REPO ROOT, not rootDir.
+    # With rootDir set, Render resolves dockerfilePath and dockerContext
+    # relative to rootDir (backend/), so "./Dockerfile" = backend/Dockerfile.
     rootDir: backend
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /healthz
     autoDeploy: true
     envVars:
