@@ -27,3 +27,6 @@ dist-ssr
 
 # Vercel env import file (local only)
 vercel.env
+
+# opening-library check cache (scripts/check-library.mjs)
+scripts/.explorer-cache.json
