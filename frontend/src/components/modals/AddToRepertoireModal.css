@@ -344,3 +344,91 @@
   width: 1.25rem;
   height: 1.25rem;
 }
+
+/* ---------- library tab ---------- */
+.add-rep-lib-group + .add-rep-lib-group {
+  margin-top: 1.25rem;
+}
+
+.add-rep-lib-heading {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-gray-500);
+}
+
+.add-rep-lib-list {
+  list-style: none;
+  border: 1px solid var(--c-gray-200);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.add-rep-lib-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.add-rep-lib-item + .add-rep-lib-item {
+  border-top: 1px solid var(--c-gray-200);
+}
+
+.add-rep-lib-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.add-rep-lib-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--c-gray-800);
+}
+
+.add-rep-lib-desc {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--c-gray-500);
+}
+
+.add-rep-lib-add {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--c-gray-300);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--c-gray-700);
+  transition: background-color 150ms, color 150ms;
+}
+
+.add-rep-lib-add:hover:not(:disabled) {
+  background: var(--c-gray-50);
+  color: var(--c-gray-900);
+}
+
+.add-rep-lib-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-rep-lib-add.is-added {
+  border-color: var(--c-success-line);
+  background: var(--c-success-bg);
+  color: var(--c-success-fg);
+  opacity: 1;
+}
+
+.add-rep-lib-add svg {
+  width: 1rem;
+  height: 1rem;
+}

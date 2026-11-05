@@ -1,20 +1,27 @@
 import React, { useRef, useState } from 'react';
-import { XIcon, UploadIcon, CheckCircle2, TreePalmIcon, TriangleAlertIcon, CloudAlertIcon } from 'lucide-react';
+import { XIcon, UploadIcon, CheckCircle2, CloudAlertIcon, Check, Plus } from 'lucide-react';
 import { useTrainerStore } from '../../store/state';
 import { chapterFromImport, chapterFromPgn } from '../../util/io';
-import { Chapter } from '../../types/training';
+import { OPENING_LIBRARY, type LibraryEntry } from '../../data/openingLibrary';
 import { useAuthStore } from '../../store/auth';
 import './modals.css';
 import './AddToRepertoireModal.css';
 // import { importJSON } from '../../util/importJSON'; // <- assume this exists
 
-type ImportTab = 'pgn' | 'json';
+type ImportTab = 'library' | 'pgn' | 'json';
 
 const AddToRepertoireModal: React.FC = () => {
   const setShowModal = useTrainerStore((s) => s.setShowingAddToRepertoireMenu);
   const addNewChapter = useTrainerStore((s) => s.addNewChapter);
 
-  const [tab, setTab] = useState<ImportTab>('pgn');
+  const [tab, setTab] = useState<ImportTab>('library');
+
+  // Library: a chapter counts as added when one with the same name is already
+  // in the repertoire, so renaming it frees the entry to be added again.
+  const repertoire = useTrainerStore((s) => s.repertoire);
+  const addedNames = new Set(repertoire.map((c) => c.name));
+  const [addingLibrary, setAddingLibrary] = useState(false);
+  const pendingLibrary = OPENING_LIBRARY.filter((e) => !addedNames.has(e.name));
 
   // PGN refs/state
   const [selectedColor, setSelectedColor] = useState<'white' | 'black' | undefined>(undefined);
@@ -52,6 +59,24 @@ const AddToRepertoireModal: React.FC = () => {
     setJsonLoaded(false);
     setJsonError(null);
     if (jsonFileRef.current) jsonFileRef.current.value = '';
+  };
+
+  const addLibraryEntries = async (entries: LibraryEntry[]) => {
+    setAddingLibrary(true);
+    // White chapters are prepended to the repertoire and black ones appended,
+    // so add the white ones back to front to keep the library's order.
+    const ordered = [
+      ...entries.filter((e) => e.trainAs === 'white').reverse(),
+      ...entries.filter((e) => e.trainAs === 'black'),
+    ];
+    try {
+      for (const entry of ordered) {
+        const chapter = chapterFromPgn(entry.pgn, entry.trainAs, entry.name);
+        if (chapter) await addNewChapter(chapter);
+      }
+    } finally {
+      setAddingLibrary(false);
+    }
   };
 
   const handleSubmitPgn = (e: React.FormEvent) => {
@@ -175,6 +200,13 @@ const AddToRepertoireModal: React.FC = () => {
         <div className="add-rep-tabs">
           <button
             type="button"
+            onClick={() => setTab('library')}
+            className={`add-rep-tab ${tab === 'library' ? 'is-active' : ''}`}
+          >
+            Library
+          </button>
+          <button
+            type="button"
             onClick={() => setTab('pgn')}
             className={`add-rep-tab ${tab === 'pgn' ? 'is-active' : ''}`}
           >
@@ -192,7 +224,57 @@ const AddToRepertoireModal: React.FC = () => {
 
       {/* Body — scrolls under the head, with the submit pinned below it so the
           primary action stays reachable on short viewports. */}
-      {tab === 'pgn' ? (
+      {tab === 'library' ? (
+        <div className="add-rep-form">
+          <div className="add-rep-body">
+            <p className="add-rep-json-intro">
+              Bộ khai cuộc dựng sẵn, có chú thích tiếng Việt. Mỗi chương là một cây biến: bạn
+              học nước của mình, các nhánh là những cách đáp phổ biến của đối thủ.
+            </p>
+            {(['white', 'black'] as const).map((color) => (
+              <section key={color} className="add-rep-lib-group">
+                <h3 className="add-rep-lib-heading">{color === 'white' ? 'Cầm Trắng' : 'Cầm Đen'}</h3>
+                <ul className="add-rep-lib-list">
+                  {OPENING_LIBRARY.filter((e) => e.trainAs === color).map((entry) => {
+                    const added = addedNames.has(entry.name);
+                    return (
+                      <li key={entry.id} className="add-rep-lib-item">
+                        <div className="add-rep-lib-text">
+                          <span className="add-rep-lib-name">{entry.name}</span>
+                          <span className="add-rep-lib-desc">{entry.description}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className={`add-rep-lib-add ${added ? 'is-added' : ''}`}
+                          disabled={added || addingLibrary}
+                          onClick={() => addLibraryEntries([entry])}
+                        >
+                          {added ? <Check /> : <Plus />}
+                          <span>{added ? 'Added' : 'Add'}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+            {!isLoggedIn && <SignedOutNotice />}
+          </div>
+
+          <div className="add-rep-footer">
+            <button
+              type="button"
+              className="add-rep-submit"
+              disabled={addingLibrary || pendingLibrary.length === 0}
+              onClick={() => addLibraryEntries(pendingLibrary)}
+            >
+              {pendingLibrary.length === 0
+                ? 'All library chapters added'
+                : `Add all (${pendingLibrary.length})`}
+            </button>
+          </div>
+        </div>
+      ) : tab === 'pgn' ? (
         <form onSubmit={handleSubmitPgn} className="add-rep-form">
           <div className="add-rep-body">
             {/* Name */}
