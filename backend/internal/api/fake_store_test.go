@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"chessrepeat/internal/domain"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/domain"
+	"chesspractice/internal/store"
 )
 
 // fakeStore is an in-memory store.Repo for unit tests. Every method

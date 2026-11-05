@@ -4,9 +4,10 @@
 import { useEffect } from 'react';
 import { useTrainerStore } from '../store/state';
 import { fetchRepertoire } from '../services/repertoire';
+import { ensureServerAwake } from '../services/serverWake';
 
 /*
-  Boot chessrepeat:
+  Boot chesspractice:
     - signed out: pull from indexedDB
     - signed in: hit /repertoire (via fetchRepertoire), which hydrates
       the auth store + repertoireAuthor from the response and computes
@@ -18,15 +19,21 @@ export function useStartup() {
   const { hydrateRepertoireFromIDB } = useTrainerStore();
 
   useEffect(() => {
-    const hasSessionHint = document.cookie.split('; ').some((c) => c.startsWith('chessrepeat_has_session='));
+    const hasSessionHint = document.cookie.split('; ').some((c) => c.startsWith('chesspractice_has_session='));
     let cancelled = false;
     /* Don't try to log-in if session hint cookie is missing */
     (async () => {
       if (!hasSessionHint) {
+        // Warm the (possibly sleeping) backend so a later sign-in is fast.
+        void ensureServerAwake({ silent: true });
         await hydrateRepertoireFromIDB();
         updateDueCounts();
         return;
       }
+      // Free-tier backend may be asleep: wait (with a banner) rather
+      // than let the first request time out.
+      await ensureServerAwake();
+      if (cancelled) return;
       const result = await fetchRepertoire();
       if (cancelled) return;
       // Fall back to IDB on auth failure (stale session hint) or a

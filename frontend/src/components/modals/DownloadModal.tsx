@@ -77,7 +77,7 @@ const DownloadModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="download-options">
               <FormatOption
                 label="JSON"
-                sublabel="Chessrepeat format"
+                sublabel="Chesspractice format"
                 selected={format === 'json'}
                 onClick={() => setFormat('json')}
               />

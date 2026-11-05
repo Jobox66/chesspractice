@@ -36,12 +36,12 @@ export async function postChapter(chapter: Chapter): Promise<void> {
     if (res.status == 413) {
       // 413 => over the per-chapter move cap; other codes => transient.
       // Either way the local copy is now divergent: resync from server.
-      alert('Chapter exceeds move cap. Email jacokyle01@gmail.com to request extra capacity');
+      alert('Chapter exceeds the move cap. Raise limit_multiplier for your user in the database to allow more.');
       // fetch actual state
       await fetchRepertoire();
     } else if (res.status == 409) {
       // 409 => chapter exceeds per-repertoire chapter cap
-      alert('Repertoire exceeds chapter limit. Email jacokyle01@gmail.com to request extra capacity');
+      alert('Repertoire exceeds the chapter limit. Raise limit_multiplier for your user in the database to allow more.');
       // fetch actual state
       await fetchRepertoire();
     } else if (!res.ok) {

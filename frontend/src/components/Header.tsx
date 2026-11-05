@@ -6,7 +6,7 @@ import { useTrainerStore, type Peer } from '../store/state';
 
 interface Props {
   // Other users currently connected to the same repertoire. Only meaningful
-  // on Chessrepeat; Login omits this.
+  // on Chesspractice; Login omits this.
   connectedUsers?: Peer[];
   incomingCollaboratorsCount?: number;
 }
@@ -136,7 +136,7 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
         </a>
 
         <a
-          href="https://github.com/jacokyle01/chessrepeat"
+          href="https://github.com/Jobox66/chesspractice"
           target="_blank"
           rel="noopener noreferrer"
           title="View on GitHub"

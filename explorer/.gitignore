@@ -36,5 +36,5 @@ chess/
 
 # Local build outputs
 /explorer
-/chessrepeat-explorer
+/chesspractice-explorer
 /import-pgn

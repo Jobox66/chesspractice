@@ -9,7 +9,7 @@
 
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Opening Training | chessrepeat.com</title>
+    <title>Opening Training | chesspractice.com</title>
 
     <!-- Resolve the theme before the first paint. This is inline and in <head>
          on purpose: anything deferred to the module bundle runs after the
@@ -20,7 +20,7 @@
       (function () {
         var theme;
         try {
-          theme = localStorage.getItem('chessrepeat:theme');
+          theme = localStorage.getItem('chesspractice:theme');
         } catch (e) {}
         if (theme !== 'light' && theme !== 'dark') {
           theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

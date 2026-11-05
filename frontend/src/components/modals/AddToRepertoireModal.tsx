@@ -37,7 +37,7 @@ const AddToRepertoireModal: React.FC = () => {
     <div className="add-rep-signed-out">
       <CloudAlertIcon />
       <p>
-        You're using chessrepeat signed out.{' '}
+        You're using chesspractice signed out.{' '}
         <button type="button" onClick={openLogin}>
           Log in
         </button>{' '}

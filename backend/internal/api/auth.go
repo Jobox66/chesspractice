@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"strings"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/domain"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/domain"
+	"chesspractice/internal/store"
 )
 
 // idTokenVerifier is the function shape of auth.VerifyFirebaseIDToken.

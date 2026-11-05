@@ -24,8 +24,8 @@ type Config struct {
 	CookieSecure bool
 	// HintCookieDomain is the Domain attribute applied to the non-secret
 	// session-hint cookie so the SPA can read it across sibling
-	// subdomains (e.g. "chessrepeat.com" when the SPA lives at
-	// chessrepeat.com and the API at api.chessrepeat.com). Leave unset
+	// subdomains (e.g. "chesspractice.com" when the SPA lives at
+	// chesspractice.com and the API at api.chesspractice.com). Leave unset
 	// in local dev where SPA and API share the same host.
 	HintCookieDomain string
 	// ExplorerURL is the base URL of the opening-explorer service, an
@@ -47,7 +47,7 @@ func Load() Config {
 	cfg := Config{
 		ListenAddr:       listenAddr(),
 		AllowedOrigins:   splitAndTrim(getEnv("ALLOWED_ORIGINS", "http://localhost:5173")),
-		PostgresURL:      getEnv("POSTGRES_URL", "postgres://localhost:5432/chessrepeat?sslmode=disable"),
+		PostgresURL:      getEnv("POSTGRES_URL", "postgres://localhost:5432/chesspractice?sslmode=disable"),
 		FirebaseProjectID: strings.TrimSpace(os.Getenv("FIREBASE_PROJECT_ID")),
 		CookieSecure:     strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
 		HintCookieDomain: strings.TrimSpace(os.Getenv("HINT_COOKIE_DOMAIN")),

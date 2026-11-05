@@ -1,4 +1,4 @@
-name: chessrepeat
+name: chesspractice
 
 services:
   postgres:
@@ -18,7 +18,7 @@ services:
       retries: 10
 
   backend:
-    image: ghcr.io/${GH_OWNER}/chessrepeat-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GH_OWNER}/chesspractice-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
@@ -26,7 +26,7 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       LISTEN_ADDR: ":8080"
       COOKIE_SECURE: "true"
-      #chessrepeat.com, api.chessrepeat.com
+      #chesspractice.com, api.chesspractice.com
       HINT_COOKIE_DOMAIN: ${HINT_COOKIE_DOMAIN}
       # Opening-explorer service on the compose network (internal-only,
       # no token — it isn't reachable from the internet).
@@ -41,7 +41,7 @@ services:
   # Caddy route. The host publish is loopback (for the import CLI on the
   # box), not the public internet.
   explorer:
-    image: ghcr.io/${GH_OWNER}/chessrepeat-explorer:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GH_OWNER}/chesspractice-explorer:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       DB_PATH: /data/chess

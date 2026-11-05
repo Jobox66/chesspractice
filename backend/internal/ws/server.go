@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/domain"
-	"chessrepeat/internal/ratelimit"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/domain"
+	"chesspractice/internal/ratelimit"
+	"chesspractice/internal/store"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"

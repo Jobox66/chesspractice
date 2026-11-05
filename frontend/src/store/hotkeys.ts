@@ -66,7 +66,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   openShortcuts: '?',
 };
 
-export const HOTKEYS_KEY = 'chessrepeat:hotkeys';
+export const HOTKEYS_KEY = 'chesspractice:hotkeys';
 
 const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta', 'AltGraph', 'CapsLock', 'OS']);
 

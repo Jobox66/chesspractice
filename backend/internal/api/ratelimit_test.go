@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/domain"
-	"chessrepeat/internal/ratelimit"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/domain"
+	"chesspractice/internal/ratelimit"
 )
 
 // TestRouter_LoginRateLimited drives the wired router through enough

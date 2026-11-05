@@ -40,7 +40,7 @@ const SettingsModal: React.FC<{ setSettingsOpen: (b: boolean) => void }> = ({ se
         <h2>
           Training Settings
           <a
-            href="https://github.com/jacokyle01/chessrepeat#spaced-repetition-in-chessrepeat"
+            href="https://github.com/Jobox66/chesspractice#spaced-repetition-in-chesspractice"
             target="_blank"
             rel="noopener noreferrer"
             title="Learn how training settings work"

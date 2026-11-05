@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/domain"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/domain"
+	"chesspractice/internal/store"
 )
 
 func GetOutgoingCollaborators(db store.Repo) http.HandlerFunc {

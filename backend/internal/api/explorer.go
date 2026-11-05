@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/store"
 )
 
 // explorerClient bounds the server-to-server call so a slow explorer

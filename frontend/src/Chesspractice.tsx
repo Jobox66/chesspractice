@@ -62,7 +62,7 @@ import { getNodeList } from './util/tree';
 import { PendingPromotion } from './types/types';
 import { PromoRole, PromotionOverlay } from './components/PromotionOverlay';
 import './css/layout.css';
-import './css/chessrepeat.css';
+import './css/chesspractice.css';
 import { Debug } from './components/Debug';
 import { useWebsocket } from './hooks/useWebsocket';
 import { useStartup } from './hooks/useStartup';
@@ -85,7 +85,7 @@ function promoRoleFromSan(san?: string): PromoRole | undefined {
 
 // The progress segments and the "+time" reward are positioned from live data,
 // which CSS can't derive on its own. Both hand the value over as a custom
-// property so the actual declarations stay in chessrepeat.css.
+// property so the actual declarations stay in chesspractice.css.
 const segmentWidth = (ratio: number): React.CSSProperties =>
   ({ '--segment-width': `${ratio * 100}%` }) as React.CSSProperties;
 
@@ -106,7 +106,7 @@ const SOUNDS = {
   move: new Audio('/sound/public_sound_standard_Move.mp3'),
   capture: new Audio('/sound/public_sound_standard_Capture.mp3'),
 };
-export const Chessrepeat = () => {
+export const Chesspractice = () => {
   const {
     setNextTrainablePosition,
     showingAddToRepertoireMenu,
@@ -713,4 +713,4 @@ export const Chessrepeat = () => {
   );
 };
 
-export default Chessrepeat;
+export default Chesspractice;

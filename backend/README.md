@@ -1,4 +1,4 @@
-# chessrepeat backend
+# chesspractice backend
 
 Go server backed by Postgres.
 
@@ -12,22 +12,22 @@ Go server backed by Postgres.
 1. Create the database and a user with access to it:
 
    ```sh
-   createdb chessrepeat
-   createuser chessrepeat --pwprompt
-   psql -d chessrepeat -c "GRANT ALL ON SCHEMA public TO chessrepeat;"
+   createdb chesspractice
+   createuser chesspractice --pwprompt
+   psql -d chesspractice -c "GRANT ALL ON SCHEMA public TO chesspractice;"
    ```
 
 2. Apply the schema:
 
    ```sh
-   psql "postgres://chessrepeat:<password>@localhost:5432/chessrepeat?sslmode=disable" \
+   psql "postgres://chesspractice:<password>@localhost:5432/chesspractice?sslmode=disable" \
      -f schema.sql
    ```
 
 3. Create `.env` in the backend directory:
 
    ```
-   POSTGRES_URL=postgres://chessrepeat:<password>@localhost:5432/chessrepeat?sslmode=disable
+   POSTGRES_URL=postgres://chesspractice:<password>@localhost:5432/chesspractice?sslmode=disable
    FIREBASE_PROJECT_ID=<your-firebase-project-id>
    ALLOWED_ORIGINS=http://localhost:5173
    LISTEN_ADDR=:8080
@@ -41,7 +41,7 @@ Go server backed by Postgres.
    securetoken certs.
    Set `COOKIE_SECURE=true` in any environment behind TLS so the
    session cookie carries the `Secure` flag and the `__Host-` prefix.
-   Set `HINT_COOKIE_DOMAIN=<apex>` (e.g. `chessrepeat.com`) when the
+   Set `HINT_COOKIE_DOMAIN=<apex>` (e.g. `chesspractice.com`) when the
    SPA and API live on sibling subdomains, so the non-secret hint
    cookie is visible to the SPA via `document.cookie`. Leave unset in
    local dev where both processes share `localhost`.
@@ -49,7 +49,7 @@ Go server backed by Postgres.
 ## Run
 
 ```sh
-./build.sh && ./chessrepeat
+go run ./cmd/server
 ```
 
 ## Schema changes

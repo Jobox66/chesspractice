@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/domain"
 )
 
 func TestGetRepertoire_Unauthorized(t *testing.T) {

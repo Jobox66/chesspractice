@@ -2,9 +2,11 @@
 # Secrets marked sync:false are prompted for on first deploy.
 services:
   - type: web
-    name: chessrepeat-backend
+    name: chesspractice-backend
     runtime: docker
     plan: free
+    # Closest to Vietnam; pair with Neon region AWS ap-southeast-1 (Singapore).
+    region: singapore
     rootDir: backend
     dockerfilePath: ./Dockerfile
     dockerContext: .

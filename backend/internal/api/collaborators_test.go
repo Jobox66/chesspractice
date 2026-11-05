@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/domain"
 )
 
 func TestGetOutgoingCollaborators(t *testing.T) {
