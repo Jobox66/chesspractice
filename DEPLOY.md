@@ -7,11 +7,11 @@ Trình duyệt ──► Vercel (React)  ── /api/* ──►  Render (Go)  �
 
 Làm theo thứ tự từ bước 0 đến bước 7. Ghi lại 3 địa chỉ sẽ dùng nhiều lần:
 
-| Tên | Ví dụ | Lấy ở đâu |
-|---|---|---|
-| `NEON_URL` | `postgresql://USER:PASS@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require` | Bước 1 |
-| `BACKEND` | `https://chesspractice-backend.onrender.com` | Bước 3 |
-| `FRONTEND` | `https://chesspractice.vercel.app` | Bước 5 (= tên project Vercel + `.vercel.app`) |
+| Tên         | Ví dụ                                                                               | Lấy ở đâu                                      |
+| ------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `NEON_URL` | `postgresql://USER:PASS@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require` | Bước 1                                           |
+| `BACKEND`  | `https://chesspractice-backend.onrender.com`                                        | Bước 3                                           |
+| `FRONTEND` | `https://chesspractice.vercel.app`                                                  | Bước 5 (= tên project Vercel + `.vercel.app`) |
 
 ---
 
@@ -27,14 +27,14 @@ git pull
 
 ## Bước 1. Neon (database)
 
-1. <https://neon.tech> → **New project**: region **AWS Singapore**, Postgres **16**.
+1. [https://neon.tech](https://neon.tech) → **New project**: region **AWS Singapore**, Postgres **16**.
    Phải là 16 để `pg_restore` 16 trên máy đọc được file backup.
 2. **Connect** → copy connection string (bản thường, không chọn *pooled*). Đây là `NEON_URL`.
 3. **SQL Editor** → dán toàn bộ nội dung [backend/schema.sql](backend/schema.sql) → **Run** (chỉ chạy 1 lần).
 
 ## Bước 2. Firebase (đăng nhập)
 
-1. <https://console.firebase.google.com> → **Create a project** → tên `chesspractice`.
+1. [https://console.firebase.google.com](https://console.firebase.google.com) → **Create a project** → tên `chesspractice`.
    Google Analytics: **tắt** (không cần). Gói mặc định là **Spark** (free), giữ nguyên.
 2. **Build → Authentication → Get started → Sign-in method → Google → Enable**
    → chọn *Project support email* → **Save**. (Email/Password: bật thêm nếu muốn.)
@@ -46,8 +46,9 @@ git pull
 
 ## Bước 3. Render (backend)
 
-1. <https://render.com> → **Sign in with GitHub** → cho phép truy cập **Only select repositories → `chesspractice`**.
+1. [https://render.com](https://render.com) → **Sign in with GitHub** → cho phép truy cập **Only select repositories → `chesspractice`**.
 2. **New → Blueprint** → chọn repo `Jobox66/chesspractice`.
+
    - **Blueprint Name**: `chesspractice`
    - **Branch**: `main`
    - **Blueprint Path**: để trống (mặc định `render.yaml`)
@@ -55,11 +56,11 @@ git pull
    Render đọc [render.yaml](render.yaml) và hiện sẵn service `chesspractice-backend` (Docker, Free, Singapore).
 3. Điền 3 biến được hỏi (chỉ hỏi lần đầu; về sau sửa ở service → **Environment**) rồi bấm **Deploy Blueprint**:
 
-   | Biến | Giá trị |
-   |---|---|
-   | `POSTGRES_URL` | `NEON_URL` + `&pool_max_conn_idle_time=4m` |
-   | `FIREBASE_PROJECT_ID` | `projectId` ở bước 2 |
-   | `ALLOWED_ORIGINS` | `FRONTEND`, ví dụ `https://chesspractice.vercel.app` (không có `/` ở cuối) |
+   | Biến                   | Giá trị                                                                              |
+   | ----------------------- | -------------------------------------------------------------------------------------- |
+   | `POSTGRES_URL`        | `NEON_URL` + `&pool_max_conn_idle_time=4m`                                         |
+   | `FIREBASE_PROJECT_ID` | `projectId` ở bước 2                                                              |
+   | `ALLOWED_ORIGINS`     | `FRONTEND`, ví dụ `https://chesspractice.vercel.app` (không có `/` ở cuối) |
 
    `ALLOWED_ORIGINS` có thể điền theo tên project Vercel bạn định đặt; nếu sai thì sửa lại ở bước 6.
 4. Mở service `chesspractice-backend` → tab **Logs**, chờ build xong (khoảng 3–5 phút), tới khi thấy
@@ -85,18 +86,18 @@ git push
 
 ## Bước 5. Vercel (frontend)
 
-1. <https://vercel.com> → **Add New → Project** → import repo `chesspractice`.
+1. [https://vercel.com](https://vercel.com) → **Add New → Project** → import repo `chesspractice`.
 2. **Project Name**: `chesspractice` (quyết định `FRONTEND`). **Root Directory**: chọn đúng thư mục `frontend`
    (không chọn thư mục con) → Continue. **Framework Preset**: Vite. **Build and Output Settings**: để mặc định.
 3. **Environment Variables**:
 
-   | Biến | Giá trị |
-   |---|---|
-   | `VITE_API_URL` | `/api` |
-   | `VITE_WS_URL` | `BACKEND` |
-   | `VITE_FIREBASE_API_KEY` | `apiKey` |
+   | Biến                         | Giá trị      |
+   | ----------------------------- | -------------- |
+   | `VITE_API_URL`              | `/api`       |
+   | `VITE_WS_URL`               | `BACKEND`    |
+   | `VITE_FIREBASE_API_KEY`     | `apiKey`     |
    | `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
-   | `VITE_FIREBASE_PROJECT_ID` | `projectId` |
+   | `VITE_FIREBASE_PROJECT_ID`  | `projectId`  |
 
    Không thêm `VITE_FIREBASE_STORAGE_BUCKET` (không dùng Storage, xem bước 2.4).
    Biến `VITE_*` được ghi cố định vào code lúc build: sửa biến xong phải **Deployments → … → Redeploy**.
@@ -117,9 +118,9 @@ git push
 
 GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
 
-| Secret | Giá trị |
-|---|---|
-| `NEON_BACKUP_URL` | `NEON_URL` (**không** thêm `&pool_max_conn_idle_time`) |
+| Secret                | Giá trị                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| `NEON_BACKUP_URL`   | `NEON_URL` (**không** thêm `&pool_max_conn_idle_time`)                                |
 | `BACKUP_PASSPHRASE` | mật khẩu dài, ngẫu nhiên. **Lưu lại cẩn thận**, mất là không mở được backup |
 
 Rồi vào **Actions → backup → Run workflow** để chạy thử. Từ đó workflow tự chạy lúc 02:00 hằng đêm và giữ 30 ngày.
@@ -135,15 +136,15 @@ gpg -d -o backup.dump chesspractice-YYYY-MM-DD.dump.gpg
 
 ## Lỗi thường gặp
 
-| Triệu chứng | Nguyên nhân | Cách sửa |
-|---|---|---|
-| Bấm đăng nhập báo `auth/unauthorized-domain` | Chưa thêm domain Vercel vào Firebase | Bước 6.1 |
-| Mở app, gọi `/api/...` trả 404 | `vercel.json` vẫn là `YOUR-BACKEND` hoặc sai host | Bước 4 |
-| Đăng nhập được nhưng không đồng bộ giữa 2 thiết bị | WebSocket bị chặn vì `ALLOWED_ORIGINS` sai | Bước 6.2, kiểm tra không có `/` ở cuối |
-| Render deploy lỗi `FIREBASE_PROJECT_ID is required` | Thiếu biến | Service → **Environment** |
-| Render log báo lỗi kết nối Postgres | `POSTGRES_URL` sai hoặc thiếu `sslmode=require` | Copy lại từ Neon |
-| Workflow backup lỗi `invalid URI query parameter` | `NEON_BACKUP_URL` có `pool_max_conn_idle_time` | Bỏ tham số đó (bước 7) |
-| Workflow backup không tự chạy nữa | GitHub tắt lịch sau 60 ngày repo không có hoạt động | Actions → backup → **Enable workflow** |
+| Triệu chứng                                                    | Nguyên nhân                                               | Cách sửa                                      |
+| ---------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| Bấm đăng nhập báo `auth/unauthorized-domain`              | Chưa thêm domain Vercel vào Firebase                     | Bước 6.1                                      |
+| Mở app, gọi `/api/...` trả 404                              | `vercel.json` vẫn là `YOUR-BACKEND` hoặc sai host    | Bước 4                                        |
+| Đăng nhập được nhưng không đồng bộ giữa 2 thiết bị | WebSocket bị chặn vì `ALLOWED_ORIGINS` sai             | Bước 6.2, kiểm tra không có `/` ở cuối |
+| Render deploy lỗi `FIREBASE_PROJECT_ID is required`           | Thiếu biến                                                | Service → **Environment**                |
+| Render log báo lỗi kết nối Postgres                          | `POSTGRES_URL` sai hoặc thiếu `sslmode=require`       | Copy lại từ Neon                              |
+| Workflow backup lỗi `invalid URI query parameter`             | `NEON_BACKUP_URL` có `pool_max_conn_idle_time`         | Bỏ tham số đó (bước 7)                    |
+| Workflow backup không tự chạy nữa                            | GitHub tắt lịch sau 60 ngày repo không có hoạt động | Actions → backup → **Enable workflow**  |
 
 ---
 
