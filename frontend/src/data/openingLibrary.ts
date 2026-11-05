@@ -102,6 +102,38 @@ export const OPENING_LIBRARY: LibraryEntry[] = [
 4. d4 Nf6 5. Nf3 c6 6. Bc4 Bf5 7. Bd2 { Mẹo cần nhớ: Mã c3 nhảy đi sẽ mở đường cho Tượng d2 tấn công Hậu a5. } 7... e6 8. Qe2 Bb4 9. O-O-O { Nhập thành dài, sau đó a3 hoặc Ne4/Nd5. } *`,
   },
   {
+    id: 'w-catalan',
+    name: 'White: Catalan (1.d4)',
+    trainAs: 'white',
+    description: 'd4 + c4 + g3: Tượng g2 ép đường chéo dài. Kèm cách chơi chống KID, Grünfeld, Benoni, Dutch.',
+    pgn: `1. d4 Nf6
+(1... d5 2. c4 e6
+  (2... c6 3. Nf3 Nf6 4. e3 { Slav: phát triển bình thường, sau đó Bd3, O-O. })
+  (2... dxc4 3. Nf3 Nf6 4. e3 { Gambit Hậu nhận: chuẩn bị Bxc4 lấy lại Tốt. })
+ 3. Nf3 Nf6 4. g3 { Về Catalan. })
+(1... f5 { Phòng thủ Hà Lan. } 2. g3 Nf6 3. Bg2 g6 4. Nf3 Bg7 5. O-O O-O 6. c4 d6 7. Nc3 { Biến Leningrad: Tượng g2 vẫn là quân mạnh nhất. })
+2. c4 e6
+(2... g6 { King's Indian / Grünfeld. } 3. g3 Bg7 4. Bg2 O-O 5. Nf3 d6
+  (5... d5 6. cxd5 Nxd5 7. O-O { Grünfeld với Tượng g2: áp lực lên trung tâm và cánh hậu. })
+ 6. O-O { King's Indian thế Fianchetto: chơi chắc, không cho Đen tấn công cánh vua. })
+(2... c5 3. d5 e6 4. Nc3 exd5 5. cxd5 d6 6. Nf3 g6 7. g3 Bg7 8. Bg2 O-O 9. O-O { Benoni: Tượng g2 hỗ trợ đẩy e4-e5 sau này. })
+3. g3 { Catalan: Tượng sẽ lên g2 nhắm vào cánh hậu Đen. }
+3... d5
+(3... Bb4+ 4. Bd2 Be7 5. Bg2 d5 6. Nf3 O-O 7. O-O { Về Catalan Đóng. })
+(3... c5 4. d5 exd5 5. cxd5 d6 6. Nc3 g6 7. Bg2 Bg7 8. Nf3 O-O 9. O-O { Cấu trúc Benoni, Tượng g2 rất mạnh. })
+4. Bg2
+4... Be7
+(4... dxc4 { Catalan Mở sớm. } 5. Qa4+ { Chiếu để lấy lại Tốt c4 ngay. } 5... Nbd7
+  (5... Bd7 6. Qxc4 Bc6 7. Nf3 Bd5 8. Qd3)
+ 6. Qxc4 a6 7. Qc2 c5 8. Nf3 b6 9. O-O Bb7 10. Nc3)
+(4... Bb4+ 5. Bd2 Be7 6. Nf3 O-O 7. O-O { Tượng đen lùi về, giống nhánh chính. })
+5. Nf3 O-O 6. O-O
+6... dxc4
+(6... Nbd7 { Catalan Đóng. } 7. Qc2 c6 8. Nbd2 b6 9. e4 Bb7 10. b3 { Chiếm trung tâm bằng e4, Tượng b2 hỗ trợ. })
+(6... c6 7. Qc2 Nbd7 8. Nbd2 b6 9. e4 Bb7 10. b3 { Về Catalan Đóng. })
+7. Qc2 { Catalan Mở: lấy lại Tốt c4 bằng Hậu. } 7... a6 8. Qxc4 b5 9. Qc2 Bb7 10. Bd2 { Kế hoạch: Ba5 hoặc Rc1, áp lực cột c và đường chéo dài. } *`,
+  },
+  {
     id: 'b-caro-kann',
     name: 'Black: Caro-Kann',
     trainAs: 'black',
@@ -171,5 +203,28 @@ export const OPENING_LIBRARY: LibraryEntry[] = [
 (3. cxd5 cxd5 4. d4 Nf6 5. Nc3 Nc6)
 (3. b3 Nf6 4. Bb2 Bf5)
 3... Nf6 4. Nc3 e6 5. d4 Nbd7 { Về Semi-Slav. } *`,
+  },
+  {
+    id: 'b-pirc',
+    name: 'Black: Pirc Defence',
+    trainAs: 'black',
+    description: '1...d6 2...Nf6 3...g6: để Trắng chiếm trung tâm rồi phản công. Có Austrian, 150, Classical.',
+    pgn: `1. e4 d6 { Phòng thủ Pirc: để Trắng chiếm trung tâm, rồi phá bằng ...c5 hoặc ...e5. }
+2. d4
+(2. Nc3 Nf6 3. d4 g6 { Về nhánh chính. })
+(2. Nf3 Nf6 3. Nc3 g6 4. d4 Bg7 { Về Classical. })
+2... Nf6 3. Nc3
+(3. Nd2 g6 4. Ngf3 Bg7 5. Be2 O-O 6. O-O c6 { Chuẩn bị ...e5 hoặc ...b5. })
+3... g6 4. f4
+(4. Be3 { Tấn công 150: Be3, Qd2, Bh6. } 4... c6 5. Qd2 b5 6. f3 Nbd7 { Phản công cánh hậu bằng ...b4, ...Qa5 trước khi Trắng tấn công. })
+(4. Nf3 { Classical. } 4... Bg7 5. Be2 O-O 6. O-O Bg4 7. Be3 Nc6 8. Qd2 e5 9. d5 Ne7 { Chuẩn bị ...Nd7, ...f5 phản công cánh vua. })
+(4. Bg5 Bg7 5. Qd2 h6 6. Bh4 g5 7. Bg3 Nh5 { Đổi Tượng g3 khó chịu của Trắng. })
+(4. g3 Bg7 5. Bg2 O-O 6. Nge2 e5 { Phá trung tâm ngay. })
+(4. Bc4 Bg7 5. Qe2 c6 { Chuẩn bị ...d5 hoặc ...b5 đuổi Tượng. })
+4... Bg7 { Tấn công Áo: Trắng đẩy cả e4, d4, f4. } 5. Nf3 c5 { Phá trung tâm ngay trước khi e5 quá mạnh. }
+6. dxc5
+(6. Bb5+ Bd7 7. e5 Ng4 8. e6 fxe6 9. Ng5 Bxb5 10. Nxe6 Bxd4 11. Nxd8 Bf2+ 12. Kd2 Be3+ 13. Ke1 Bf2+ { Chiếu lặp, hòa. Biến sắc bén cần thuộc chính xác. })
+(6. d5 O-O 7. Bd3 e6 8. O-O exd5 9. exd5 { Cấu trúc Benoni, Đen chơi ...Re8, ...Bg4. })
+6... Qa5 7. Bd3 Qxc5 8. Qe2 O-O 9. Be3 Qa5 10. O-O Bg4 { Đổi Tượng lấy Mã f3, tranh ô e5 và d4. } *`,
   },
 ];

@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { useTrainerStore } from '../store/state';
 import {
+  BrainIcon,
+  CheckCircle2Icon,
   GraduationCapIcon,
   HistoryIcon,
   LucideRepeat2,
@@ -84,6 +86,10 @@ export const UserTip = () => {
   const setNextTrainable = useTrainerStore((s) => s.setNextTrainablePosition);
   const makeMove = useTrainerStore((s) => s.makeMove);
   const setUserTip = useTrainerStore((s) => s.setUserTip);
+  const startQuiz = useTrainerStore((s) => s.startQuiz);
+  const quizQueue = useTrainerStore((s) => s.quizQueue);
+  const quizTotal = useTrainerStore((s) => s.quizTotal);
+  const quizMistakes = useTrainerStore((s) => s.quizMistakes);
 
   if (repertoire.length == 0) return <EmptyRepertoire />;
   if (!trainingMethod) return <Unselected />;
@@ -98,7 +104,67 @@ export const UserTip = () => {
   if (!chapter) return null;
   const san = trainableContext?.targetMove?.data.san;
   const isWhite = chapter.trainAs == 'white';
+  const side = isWhite ? 'Trắng' : 'Đen';
+  // the move being asked is no longer in the queue
+  const quizStep = quizTotal - quizQueue.length;
   switch (userTip) {
+    case 'lineDone':
+      return (
+        <Tip
+          icon={<CheckCircle2Icon />}
+          title="Xong một nhánh"
+          description="Dừng lại kiểm tra trí nhớ: tự đi lại cả nhánh từ đầu, không có mũi tên gợi ý."
+          descriptionClassName="tip-description-small"
+          actions={[
+            { label: 'KIỂM TRA NGAY', onClick: startQuiz },
+            { label: 'HỌC TIẾP', onClick: setNextTrainable },
+          ]}
+        />
+      );
+    case 'quiz':
+      return (
+        <Tip
+          icon={<BrainIcon />}
+          title={`Kiểm tra trí nhớ · ${quizStep}/${quizTotal}`}
+          description={`${side} đi gì ở đây?`}
+        />
+      );
+    case 'quizFail':
+      return (
+        <Tip
+          icon={<XIcon className="tip-cross" />}
+          title={`${lastGuess} chưa đúng`}
+          description={`Nước đúng là ${san}. Đi lại nước đó để tiếp tục.`}
+        />
+      );
+    case 'quizDone':
+      return (
+        <Tip
+          icon={<CheckCircle2Icon />}
+          title={
+            quizMistakes === 0
+              ? `Nhớ đúng cả ${quizTotal}/${quizTotal} nước!`
+              : `Đúng ${quizTotal - quizMistakes}/${quizTotal} nước`
+          }
+          description={
+            quizMistakes === 0
+              ? 'Nhánh này đã vào đầu. Học tiếp nhánh sau nhé.'
+              : 'Nên kiểm tra lại một lượt nữa trước khi học tiếp.'
+          }
+          descriptionClassName="tip-description-small"
+          actions={
+            quizMistakes === 0
+              ? [
+                  { label: 'HỌC TIẾP', onClick: setNextTrainable },
+                  { label: 'KIỂM TRA LẠI', onClick: startQuiz },
+                ]
+              : [
+                  { label: 'KIỂM TRA LẠI', onClick: startQuiz },
+                  { label: 'HỌC TIẾP', onClick: setNextTrainable },
+                ]
+          }
+        />
+      );
     case 'recall':
       return (
         <Tip

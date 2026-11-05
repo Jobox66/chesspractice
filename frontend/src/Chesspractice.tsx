@@ -128,7 +128,9 @@ export const Chesspractice = () => {
     trainingMethod,
 
     updateDueCounts,
-    learn,
+    learnStep,
+    learnPhase,
+    quizAnswer,
     train,
 
     guess,
@@ -188,6 +190,9 @@ export const Chesspractice = () => {
   };
 
   const isTraining = trainingMethod === 'learn' || trainingMethod === 'recall';
+  // Learn mode's memory check: same board, but no arrow and free moves.
+  const isQuiz = trainingMethod === 'learn' && learnPhase === 'quiz';
+  const showsLearnArrow = trainingMethod === 'learn' && !isQuiz;
 
   const [sounds, setSounds] = useState(SOUNDS);
   const [activeMoveId, setActiveMoveId] = useState();
@@ -271,11 +276,11 @@ export const Chesspractice = () => {
     const result = [];
     if (!isEditing) {
       const uci = targetDest();
-      if (trainingMethod === 'learn' && atLast()) {
+      if (showsLearnArrow) {
         result.push({ orig: uci[0], dest: uci[1], brush: 'green' });
       } else if (showingHint) {
         result.push({ orig: uci[0], brush: 'yellow' });
-      } else if (userTip === 'fail') {
+      } else if (userTip === 'fail' || userTip === 'quizFail') {
         result.push({ orig: uci[0], dest: uci[1], brush: 'red' });
       }
     }
@@ -292,7 +297,7 @@ export const Chesspractice = () => {
     // don't allow moves immediately after recall fail
     // if (userTip == 'fail') return new Map();
     // TODO fix. this is supposed to be just the move we're looking to see, e.x. for learning or correcting on fail
-    if ((trainingMethod == 'learn' || userTip == 'fail') && isAtLast) {
+    if ((showsLearnArrow || userTip == 'fail' || userTip == 'quizFail') && isAtLast) {
       const uci = targetDest();
       // calcTarget returns castling as king→rook (e1h1, e1a1). Most
       // chess UIs also accept king→two-squares (e1g1, e1c1), so when
@@ -382,8 +387,8 @@ export const Chesspractice = () => {
         updateDueCounts();
         switch (trainingMethod) {
           case 'learn':
-            learn();
-            setNextTrainablePosition();
+            if (isQuiz) quizAnswer(san);
+            else learnStep();
             break;
           case 'recall':
             if (userTip == 'fail') {
@@ -567,7 +572,7 @@ export const Chesspractice = () => {
                     orientation={chapter?.trainAs || 'white'}
                     onCancel={closePromo}
                     requiredRole={
-                      trainingMethod === 'learn'
+                      showsLearnArrow
                         ? promoRoleFromSan(useTrainerStore.getState().trainableContext?.targetMove?.data?.san)
                         : undefined
                     }

@@ -81,6 +81,21 @@ export const EXAMPLE_CHAPTER_NAME = 'Example Chapter';
 const EXAMPLE_PGN = `1. e4 e5 { This is an example chapter. To train your own openings, click "add" and choose a PGN (opening file) to train. chesspractice uses spaced repetition to schedule your reviews after you learn a move. Enjoy!} 
 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8# *`;
 
+/** Where Learn mode is in its learn → check-memory loop. After the last new
+ *  move of a line is learned the trainer pauses ('lineDone') instead of
+ *  jumping to the next line; the user can then replay the whole line from
+ *  memory ('quiz') before carrying on. */
+export type LearnPhase = 'learning' | 'lineDone' | 'quiz' | 'quizDone';
+
+// Board state for training one move: sit on the position before it.
+function contextPosition(root: TrainableNode, ctx: TrainableContext) {
+  return {
+    trainableContext: ctx,
+    selectedPath: ctx.startingPath,
+    selectedNode: getNodeList(root, ctx.startingPath).at(-1),
+  };
+}
+
 interface TrainerState {
   /* UI Flags */
   trainingMethod: TrainingMethod;
@@ -158,6 +173,19 @@ interface TrainerState {
   resyncAndRestore: () => Promise<void>;
   learn: () => void;
   train: (correct: boolean) => number | null;
+
+  learnPhase: LearnPhase;
+  // the quiz still to come, after the move currently being asked
+  quizQueue: TrainableContext[];
+  quizTotal: number;
+  quizMistakes: number;
+  // path of the last move learned in the line that just finished
+  lineEndPath: string;
+  // learn the current move, then either continue the line or pause on it
+  learnStep: () => void;
+  // replay the finished line from the start, no arrows
+  startQuiz: () => void;
+  quizAnswer: (san: string) => void;
   guess: (san: string) => TrainingOutcome;
 
   // higher-level ops
@@ -513,7 +541,13 @@ export const useTrainerStore = create<TrainerState>()(
         const maybeTrainingContext = computeNextTrainableNode(chapter.root, method, searchConfig);
 
         if (!maybeTrainingContext) {
-          set({ userTip: 'empty', selectedPath: '', selectedNode: null, trainableContext: null });
+          set({
+            userTip: 'empty',
+            selectedPath: '',
+            selectedNode: null,
+            trainableContext: null,
+            learnPhase: 'learning',
+          });
         } else {
           const targetPath = maybeTrainingContext.startingPath;
           const nodeList = getNodeList(root, targetPath);
@@ -522,6 +556,7 @@ export const useTrainerStore = create<TrainerState>()(
             selectedNode: nodeList.at(-1),
             trainableContext: maybeTrainingContext,
             userTip: method,
+            learnPhase: 'learning',
           });
         }
       },
@@ -682,6 +717,124 @@ export const useTrainerStore = create<TrainerState>()(
             }),
           );
         }
+      },
+
+      learnPhase: 'learning',
+      quizQueue: [],
+      quizTotal: 0,
+      quizMistakes: 0,
+      lineEndPath: '',
+
+      learnStep: () => {
+        const { trainableContext, learn, setNextTrainablePosition, searchConfig } = get();
+        if (!trainableContext) return;
+        const learnedPath = trainableContext.startingPath + trainableContext.targetMove.data.id;
+        learn();
+
+        const { repertoire, selectedChapterId, trainingMethod } = get();
+        const chapter = selectedChapterOf(repertoire, selectedChapterId);
+        // learn() resyncs instead when the move vanished under us; don't
+        // pause on a line that may no longer exist.
+        if (!chapter || trainingMethod !== 'learn' || !nodeAtPathOrNull(chapter.root, learnedPath)) {
+          setNextTrainablePosition();
+          return;
+        }
+
+        // Still inside the same line: the next new move continues from the
+        // one just learned, so keep going without a break.
+        const next = computeNextTrainableNode(chapter.root, 'learn', searchConfig);
+        if (next && next.startingPath.startsWith(learnedPath)) {
+          setNextTrainablePosition();
+          return;
+        }
+
+        // The line is finished — stop on its final position and offer a check.
+        set({
+          learnPhase: 'lineDone',
+          lineEndPath: learnedPath,
+          trainableContext: null,
+          selectedPath: learnedPath,
+          selectedNode: getNodeList(chapter.root, learnedPath).at(-1),
+          userTip: 'lineDone',
+        });
+      },
+
+      startQuiz: () => {
+        const { repertoire, selectedChapterId, lineEndPath, setNextTrainablePosition } = get();
+        const chapter = selectedChapterOf(repertoire, selectedChapterId);
+        if (!chapter) return;
+
+        // Every move of ours along the line, from the first move on — the
+        // earlier ones too, so the line is recalled as one sequence.
+        const items: TrainableContext[] = [];
+        let node: TrainableNode = chapter.root;
+        let path = '';
+        for (let i = 0; i < lineEndPath.length; i += 2) {
+          const id = lineEndPath.slice(i, i + 2);
+          const child = node.children.find((c) => c.data.id === id);
+          if (!child) break;
+          if (child.data.enabled) items.push({ startingPath: path, targetMove: child });
+          path += id;
+          node = child;
+        }
+        if (!items.length) {
+          setNextTrainablePosition();
+          return;
+        }
+
+        const [first, ...rest] = items;
+        set({
+          learnPhase: 'quiz',
+          quizQueue: rest,
+          quizTotal: items.length,
+          quizMistakes: 0,
+          userTip: 'quiz',
+          ...contextPosition(chapter.root, first),
+        });
+      },
+
+      quizAnswer: (san: string) => {
+        const { trainableContext, quizQueue, quizMistakes, userTip, train, repertoire, selectedChapterId } =
+          get();
+        const chapter = selectedChapterOf(repertoire, selectedChapterId);
+        if (!trainableContext || !chapter) return;
+        const target = trainableContext.targetMove;
+
+        const advance = () => {
+          const [next, ...rest] = quizQueue;
+          if (!next) {
+            const endPath = trainableContext.startingPath + target.data.id;
+            set({
+              learnPhase: 'quizDone',
+              trainableContext: null,
+              selectedPath: endPath,
+              selectedNode: target,
+              userTip: 'quizDone',
+            });
+            return;
+          }
+          set({ quizQueue: rest, userTip: 'quiz', ...contextPosition(chapter.root, next) });
+        };
+
+        // After a miss the board only allows the right move; playing it
+        // just moves on.
+        if (userTip === 'quizFail') {
+          if (san === target.data.san) advance();
+          return;
+        }
+
+        const correct = san === target.data.san;
+        // A move learned moments ago has never been reviewed: this first
+        // answer is its first review, so a miss brings it back soon in Recall.
+        // Older moves on the line are only practised, their schedule is kept.
+        const card = userCard(target.data);
+        if (card && card.reps === 0) train(correct);
+
+        if (!correct) {
+          set({ lastGuess: san, userTip: 'quizFail', quizMistakes: quizMistakes + 1 });
+          return;
+        }
+        advance();
       },
 
       /*
