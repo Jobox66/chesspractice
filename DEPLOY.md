@@ -1,170 +1,147 @@
-# Deploy (miễn phí): Neon + Render + Vercel
-
-## Kiến trúc
+# Deploy chesspractice (miễn phí)
 
 ```
-[ NGƯỜI DÙNG ]  (PC / điện thoại)
-      │
-      ▼
-[ FRONTEND – React/Vite ]  Vercel     https://<app>.vercel.app
-      │  ├─ HTTP:  /api/*  ──(Vercel rewrite, cùng origin)──┐
-      │  └─ WebSocket: wss://<backend>.onrender.com ─────────┤  (?ticket=…)
-      ▼                                                      ▼
-[ BACKEND – Go ]  Render (free web service, Docker)   API + WS (FSRS tính ở frontend)
-      │
-      ▼
-[ DATABASE – PostgreSQL ]  Neon (free)
+Trình duyệt ──► Vercel (React)  ── /api/* ──►  Render (Go)  ──►  Neon (Postgres 16)
+                     └──── WebSocket (wss://…onrender.com) ───┘
 ```
 
-Vì sao lại có `/api` rewrite và ticket WebSocket? `*.vercel.app` và `*.onrender.com`
-là **2 site khác nhau**: cookie phiên đăng nhập sẽ bị coi là cookie bên thứ ba và bị
-chặn (Safari/iPhone chặn hẳn). Vì thế:
+Làm theo thứ tự từ bước 0 đến bước 7. Ghi lại 3 địa chỉ sẽ dùng nhiều lần:
 
-- **HTTP** đi qua rewrite của Vercel nên với trình duyệt là cùng origin, cookie chạy bình thường.
-- **WebSocket** không qua được rewrite, nên client gọi `POST /api/ws-ticket` để lấy vé dùng
-  1 lần (sống 30 giây), rồi mở `wss://<backend>.onrender.com/subscribe/<user>?ticket=…`.
-
-Đăng nhập vẫn dùng **Firebase Auth** (miễn phí). Dịch vụ `explorer` (thống kê khai cuộc)
-**không** deploy trên gói free vì cần ổ đĩa bền vững; để trống `EXPLORER_URL` thì tính năng này tắt.
+| Tên | Ví dụ | Lấy ở đâu |
+|---|---|---|
+| `NEON_URL` | `postgresql://USER:PASS@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require` | Bước 1 |
+| `BACKEND` | `https://chesspractice-backend.onrender.com` | Bước 3 |
+| `FRONTEND` | `https://chesspractice.vercel.app` | Bước 5 (= tên project Vercel + `.vercel.app`) |
 
 ---
 
-## 1. Neon (database)
+## Bước 0. Đưa code vào `main`
 
-1. Tạo project ở <https://neon.tech>: region `AWS Asia Pacific (Singapore)`, **Postgres version 16**.
-   Chọn 16 để khớp với `pg_dump`/`pg_restore` 16 có sẵn trên máy, phục vụ việc khôi phục backup
-   (công cụ bản 16 không đọc được file dump của bản 17).
-2. **Dashboard → Connect** → copy connection string (bản *direct*, không cần `-pooler`).
-3. Tạo bảng: mở **SQL Editor**, dán toàn bộ [backend/schema.sql](backend/schema.sql) rồi Run.
-   Hoặc dùng psql: `psql "<connection string>" -f backend/schema.sql`
-4. Thêm `&pool_max_conn_idle_time=4m` vào cuối connection string, để kết nối rảnh tự đóng
-   và Neon được ngủ (tiết kiệm giờ compute của gói free):
+GitHub repo → **Pull requests → New pull request** → base `main` ← compare `deploy/neon-render-vercel`
+→ **Create** → **Merge**. Sau đó cập nhật máy:
 
-   ```
-   postgresql://USER:PASS@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pool_max_conn_idle_time=4m
-   ```
+```bash
+git checkout main
+git pull
+```
 
-## 2. Firebase (đăng nhập)
+## Bước 1. Neon (database)
 
-1. Firebase console → **Authentication → Sign-in method**: bật Google và/hoặc Email/Password.
-2. **Project settings → Your apps**: lấy config web (`apiKey`, `authDomain`, …) cho bước 4.
-3. Sau khi có domain Vercel: **Authentication → Settings → Authorized domains** → thêm
-   `<app>.vercel.app`.
+1. <https://neon.tech> → **New project**: region **AWS Singapore**, Postgres **16**.
+   Phải là 16 để `pg_restore` 16 trên máy đọc được file backup.
+2. **Connect** → copy connection string (bản thường, không chọn *pooled*). Đây là `NEON_URL`.
+3. **SQL Editor** → dán toàn bộ nội dung [backend/schema.sql](backend/schema.sql) → **Run** (chỉ chạy 1 lần).
 
-## 3. Render (backend Go)
+## Bước 2. Firebase (đăng nhập)
 
-1. Push repo lên GitHub.
-2. Render → **New → Blueprint** → chọn repo. Render đọc [render.yaml](render.yaml).
-   (Hoặc tạo tay: **New → Web Service**, Runtime Docker, Root Directory `backend`,
-   Health check `/healthz`, plan Free.)
-3. Điền biến môi trường:
+1. <https://console.firebase.google.com> → tạo project (gói Spark, free).
+2. **Authentication → Sign-in method** → bật **Google** (và Email/Password nếu muốn).
+3. **Project settings → Your apps → Web (`</>`)** → đăng ký app → giữ lại các giá trị
+   `apiKey`, `authDomain`, `projectId`, `storageBucket` cho bước 5.
+
+> Upload ảnh đại diện lúc đăng ký cần Firebase Storage. Nếu Firebase đòi nâng gói (Blaze) để bật Storage thì bỏ qua:
+> đăng nhập Google vẫn dùng ảnh Google, chỉ là không upload được ảnh riêng.
+
+## Bước 3. Render (backend)
+
+1. <https://render.com> → **New → Blueprint** → chọn repo `chesspractice` → Render đọc [render.yaml](render.yaml).
+2. Điền biến môi trường được hỏi:
 
    | Biến | Giá trị |
    |---|---|
-   | `POSTGRES_URL` | connection string Neon ở bước 1 |
-   | `FIREBASE_PROJECT_ID` | project id của Firebase |
-   | `ALLOWED_ORIGINS` | `https://<app>.vercel.app` (nhiều origin thì ngăn cách bằng dấu phẩy) |
-   | `COOKIE_SECURE` | `true` (blueprint đã đặt sẵn) |
+   | `POSTGRES_URL` | `NEON_URL` + `&pool_max_conn_idle_time=4m` |
+   | `FIREBASE_PROJECT_ID` | `projectId` ở bước 2 |
+   | `ALLOWED_ORIGINS` | `FRONTEND`, ví dụ `https://chesspractice.vercel.app` (không có `/` ở cuối) |
 
-   Không cần đặt `PORT`/`LISTEN_ADDR`: Render tự cấp `PORT`, backend đọc biến này.
-4. Deploy xong, kiểm tra: `https://<backend>.onrender.com/healthz` trả về 200.
+   `ALLOWED_ORIGINS` có thể điền theo tên project Vercel bạn định đặt; nếu sai thì sửa lại ở bước 6.
+3. Chờ deploy xong (khoảng 3–5 phút). Copy địa chỉ service, đây là `BACKEND`.
+4. Kiểm tra: mở `BACKEND/healthz` → trang trắng, không báo lỗi là OK.
 
-> Gói free của Render **ngủ sau 15 phút không có request**, lần gọi đầu mất khoảng 1 phút để thức dậy.
-> Frontend tự xử lý: khi mở app, nó gọi `/api/healthz` để đánh thức server. Nếu đang đăng nhập (hoặc
-> vừa bấm đăng nhập) mà server chưa dậy, app hiện banner "Đang khởi động server…" và chờ tới khi
-> server trả lời (tối đa khoảng 2,5 phút, sau đó hiện nút "Thử lại").
+## Bước 4. Trỏ frontend về backend
 
-## 4. Vercel (frontend React)
+Sửa [frontend/vercel.json](frontend/vercel.json): thay `YOUR-BACKEND.onrender.com` bằng host của `BACKEND`
+(không kèm `https://`). Rồi:
 
-1. Sửa [frontend/vercel.json](frontend/vercel.json): thay `YOUR-BACKEND.onrender.com` bằng domain
-   Render thật, rồi commit. (Rewrite của Vercel không đọc được biến môi trường nên phải ghi thẳng vào file.)
-   File này cũng tắt cache của Vercel cho `/api/*` (`x-vercel-enable-rewrite-caching: 0`): project
-   Vercel tạo sau 06/04/2026 mặc định cache phản hồi của rewrite, mà API trả dữ liệu riêng từng người.
-2. Vercel → **Add New → Project** → import repo → **Root Directory: `frontend`**
-   (Framework tự nhận là Vite).
-3. Environment Variables:
+```bash
+git add frontend/vercel.json
+git commit -m "Point Vercel rewrite to Render backend"
+git push
+```
+
+## Bước 5. Vercel (frontend)
+
+1. <https://vercel.com> → **Add New → Project** → import repo `chesspractice`.
+2. **Project Name**: `chesspractice` (quyết định `FRONTEND`). **Root Directory**: `frontend`.
+3. **Environment Variables**:
 
    | Biến | Giá trị |
    |---|---|
    | `VITE_API_URL` | `/api` |
-   | `VITE_WS_URL` | `https://<backend>.onrender.com` |
-   | `VITE_FIREBASE_API_KEY` | từ Firebase |
-   | `VITE_FIREBASE_AUTH_DOMAIN` | từ Firebase |
-   | `VITE_FIREBASE_PROJECT_ID` | từ Firebase |
-   | `VITE_FIREBASE_STORAGE_BUCKET` | từ Firebase |
+   | `VITE_WS_URL` | `BACKEND` |
+   | `VITE_FIREBASE_API_KEY` | `apiKey` |
+   | `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
+   | `VITE_FIREBASE_PROJECT_ID` | `projectId` |
+   | `VITE_FIREBASE_STORAGE_BUCKET` | `storageBucket` |
 
-4. Deploy. Sau đó quay lại Render để cập nhật `ALLOWED_ORIGINS` theo domain Vercel cuối cùng,
-   và thêm domain đó vào Firebase Authorized domains.
+4. **Deploy**. Domain hiển thị ở mục **Domains** chính là `FRONTEND`.
 
-Mỗi lần push lên `main`: Render và Vercel tự deploy; GitHub Actions ([ci.yml](.github/workflows/ci.yml))
-chạy test backend và build frontend.
+## Bước 6. Nối các phần lại
 
-## 5. Backup & restore
+1. Firebase → **Authentication → Settings → Authorized domains → Add** → host của `FRONTEND`
+   (ví dụ `chesspractice.vercel.app`).
+2. Nếu `FRONTEND` khác giá trị đã điền ở bước 3: Render → service → **Environment** → sửa `ALLOWED_ORIGINS` → Save
+   (Render tự deploy lại).
+3. Kiểm tra trên PC và điện thoại:
+   - Mở `FRONTEND`. Nếu server đang ngủ, banner "Đang khởi động server…" hiện khoảng 1 phút, đó là bình thường.
+   - Đăng nhập → thêm một chapter → ôn vài nước.
+   - Mở cùng tài khoản trên thiết bị thứ hai: dữ liệu phải giống nhau.
 
-[backup.yml](.github/workflows/backup.yml) chạy `pg_dump` lúc 02:00 (giờ VN) mỗi đêm, mã hoá bằng GPG
-(repo public) rồi lưu thành artifact của GitHub Actions, giữ 30 ngày.
+## Bước 7. Backup hằng đêm
 
-**Cài đặt** (GitHub repo → Settings → Secrets and variables → Actions):
+GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
 
-| Loại | Tên | Giá trị |
-|---|---|---|
-| Secret | `NEON_BACKUP_URL` | connection string Neon **không** kèm `&pool_max_conn_idle_time=…` (`pg_dump` không hiểu tham số này) |
-| Secret | `BACKUP_PASSPHRASE` | chuỗi ngẫu nhiên dài; **lưu vào trình quản lý mật khẩu**, mất là không khôi phục được |
-| Variable (tuỳ chọn) | `PG_MAJOR` | phiên bản Postgres của Neon nếu khác 16 |
+| Secret | Giá trị |
+|---|---|
+| `NEON_BACKUP_URL` | `NEON_URL` (**không** thêm `&pool_max_conn_idle_time`) |
+| `BACKUP_PASSPHRASE` | mật khẩu dài, ngẫu nhiên. **Lưu lại cẩn thận**, mất là không mở được backup |
 
-Sau đó vào tab **Actions → backup → Run workflow** để chạy thử một lần.
+Rồi vào **Actions → backup → Run workflow** để chạy thử. Từ đó workflow tự chạy lúc 02:00 hằng đêm và giữ 30 ngày.
 
-**Khôi phục** (Git Bash; `gpg` có sẵn trong Git for Windows):
+Khôi phục (Git Bash): tải artifact ở tab Actions, giải nén, rồi chạy
 
 ```bash
-# 1. Tải artifact từ tab Actions, giải nén ra file .dump.gpg
-gpg -d -o backup.dump chesspractice-YYYY-MM-DD.dump.gpg      # nhập BACKUP_PASSPHRASE
-# 2. Đổ vào database đích (Neon hoặc Postgres local)
-"/c/Program Files/PostgreSQL/16/bin/pg_restore.exe" --clean --if-exists --no-owner \
-  -d "postgresql://USER:PASS@HOST/DB?sslmode=require" backup.dump
+gpg -d -o backup.dump chesspractice-YYYY-MM-DD.dump.gpg
+"/c/Program Files/PostgreSQL/16/bin/pg_restore.exe" --clean --if-exists --no-owner -d "NEON_URL" backup.dump
 ```
-
-> GitHub tự tắt workflow theo lịch nếu repo public không có hoạt động nào trong 60 ngày.
-> Khi đó vào tab Actions bật lại.
 
 ---
 
-## Chạy local
+## Lỗi thường gặp
+
+| Triệu chứng | Nguyên nhân | Cách sửa |
+|---|---|---|
+| Bấm đăng nhập báo `auth/unauthorized-domain` | Chưa thêm domain Vercel vào Firebase | Bước 6.1 |
+| Mở app, gọi `/api/...` trả 404 | `vercel.json` vẫn là `YOUR-BACKEND` hoặc sai host | Bước 4 |
+| Đăng nhập được nhưng không đồng bộ giữa 2 thiết bị | WebSocket bị chặn vì `ALLOWED_ORIGINS` sai | Bước 6.2, kiểm tra không có `/` ở cuối |
+| Render deploy lỗi `FIREBASE_PROJECT_ID is required` | Thiếu biến | Bước 3.2 |
+| Render log báo lỗi kết nối Postgres | `POSTGRES_URL` sai hoặc thiếu `sslmode=require` | Copy lại từ Neon |
+| Workflow backup lỗi `invalid URI query parameter` | `NEON_BACKUP_URL` có `pool_max_conn_idle_time` | Bỏ tham số đó (bước 7) |
+| Workflow backup không tự chạy nữa | GitHub tắt lịch sau 60 ngày repo không có hoạt động | Actions → backup → **Enable workflow** |
+
+---
+
+## Chạy trên máy (dev)
 
 ```bash
-# backend (cần Go 1.26+)
-cd backend
-cp .env.example .env      # điền POSTGRES_URL + FIREBASE_PROJECT_ID (xem "DB cho dev" bên dưới)
-go run ./cmd/server
+# DB dev: dùng Postgres 16 trên máy (cần mật khẩu user postgres)
+"/c/Program Files/PostgreSQL/16/bin/createdb.exe" -U postgres chesspractice_dev
+"/c/Program Files/PostgreSQL/16/bin/psql.exe" -U postgres -d chesspractice_dev -f backend/schema.sql
 
-# frontend
-cd frontend
-cp .env.example .env      # VITE_API_URL=http://localhost:8080
-npm install
-npm run dev               # http://localhost:5173
+# backend: copy backend/.env.example → backend/.env, điền
+#   POSTGRES_URL=postgres://postgres:<mật khẩu>@localhost:5432/chesspractice_dev?sslmode=disable
+#   FIREBASE_PROJECT_ID=<projectId>
+cd backend && go run ./cmd/server
+
+# frontend: copy frontend/.env.example → frontend/.env (VITE_API_URL=http://localhost:8080 + biến Firebase)
+cd frontend && npm install && npm run dev      # http://localhost:5173
 ```
-
-**DB cho dev**, chọn một trong hai:
-
-- **Postgres 16 có sẵn trên máy** (nhanh, không tốn hạn mức Neon). Cần biết mật khẩu user `postgres`:
-
-  ```bash
-  PG="/c/Program Files/PostgreSQL/16/bin"
-  "$PG/createdb.exe" -U postgres chesspractice_dev
-  "$PG/psql.exe" -U postgres -d chesspractice_dev -f backend/schema.sql
-  # backend/.env:
-  # POSTGRES_URL=postgres://postgres:<password>@localhost:5432/chesspractice_dev?sslmode=disable
-  ```
-
-- **Branch Neon riêng cho dev** (Neon → Branches → New branch): không cần cài gì, dữ liệu tách khỏi bản chính.
-
-## Lưu ý
-
-- **Preview deployment** của Vercel có URL khác nhau mỗi lần. HTTP vẫn chạy (qua rewrite), nhưng
-  WebSocket sẽ bị backend từ chối vì Origin không nằm trong `ALLOWED_ORIGINS`. Muốn test WS trên
-  preview thì thêm origin đó vào `ALLOWED_ORIGINS`.
-- Ticket WS lưu trong RAM của backend: chỉ đúng khi chạy **1 instance**, đúng với gói free.
-- Thuật toán FSRS hiện chạy ở frontend (`ts-fsrs`); backend lưu stability/difficulty vào bảng
-  `training_cards`.
-- `docker-compose.yml` và `.env.example` ở thư mục gốc là cấu hình VPS (Postgres + Caddy tự host),
-  giữ lại để dùng sau nếu cần; không dùng cho cách deploy này.
