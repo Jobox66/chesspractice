@@ -1,0 +1,375 @@
+/* Attention pulse. The ring color comes from --ring-pulse on the element
+   itself, so each caller matches it to its own fill; the dark default is the
+   fallback for anything that doesn't set one. --ring-pulse-out is where that
+   ring fades to: leave it and the ring fades through transparent *black*,
+   which greys the color out on the way; set it to the same hue at zero alpha
+   and the ring keeps its color the whole way. */
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--ring-pulse, rgb(17 24 39 / 0.5));
+    transform: scale(1);
+  }
+  /* A ring that only ever grows-and-fades is invisible at both ends and faint
+     in between — it peaked around 17% alpha. Snapping out to a solid ring
+     first gives the eye something to catch before the fade starts. */
+  18% {
+    box-shadow: 0 0 0 4px var(--ring-pulse, rgb(17 24 39 / 0.5));
+    transform: scale(1.06);
+  }
+  70% {
+    box-shadow: 0 0 0 15px var(--ring-pulse-out, transparent);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--ring-pulse-out, transparent);
+    transform: scale(1);
+  }
+}
+
+/*
+ * Chessground base css properties.
+ *
+ * You need to include the css files in themes folder in order to have the
+ * board and pieces displayed!
+ */
+
+html,
+body {
+  margin: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevents scrolling on the whole page */
+  font-family: 'Fira Sans', 'Roboto', sans-serif;
+  /* Match .app-root so no white shows through any gap at the top/bottom
+     (mobile dvh/vh mismatch, header margin, sub-pixel rounding, overscroll). */
+  background: var(--c-page-bg);
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* overflow: hidden;  */
+}
+
+.cg-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: block;
+}
+
+svg {
+  overflow: visible;
+}
+
+/* Chessground floors the board to a whole number of 8 device pixels, so it
+   can be a few px narrower than its wrap; centering splits that slack evenly
+   instead of pooling it on the right. */
+cg-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: block;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+cg-board {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  line-height: 0;
+  background-size: cover;
+  cursor: pointer;
+  /* box-shadow:
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12); */
+  border-radius: 0.375rem 0.375rem 0.375rem 0;
+  /* border: 2px solid oklch(87.2% 0.01 258.338); */
+}
+
+cg-board square {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12.5%;
+  height: 12.5%;
+  pointer-events: none;
+}
+cg-board square.move-dest {
+  background: radial-gradient(rgba(20, 85, 30, 0.5) 22%, #208530 0, rgba(0, 0, 0, 0.3) 0, rgba(0, 0, 0, 0) 0);
+  pointer-events: auto;
+}
+cg-board square.premove-dest {
+  background: radial-gradient(rgba(20, 30, 85, 0.5) 22%, #203085 0, rgba(0, 0, 0, 0.3) 0, rgba(0, 0, 0, 0) 0);
+}
+cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0%, transparent 80%, rgba(20, 85, 0, 0.3) 80%);
+}
+cg-board square.oc.premove-dest {
+  background: radial-gradient(transparent 0%, transparent 80%, rgba(20, 30, 85, 0.2) 80%);
+}
+cg-board square.move-dest:hover {
+  background: rgba(20, 85, 30, 0.3);
+}
+cg-board square.premove-dest:hover {
+  background: rgba(20, 30, 85, 0.2);
+}
+cg-board square.last-move {
+  will-change: transform;
+  background-color: rgba(155, 199, 0, 0.41);
+}
+cg-board square.selected {
+  background-color: rgba(20, 85, 30, 0.5);
+}
+cg-board square.check {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 0, 0, 1) 0%,
+    rgba(231, 0, 0, 1) 25%,
+    rgba(169, 0, 0, 0) 89%,
+    rgba(158, 0, 0, 0) 100%
+  );
+}
+cg-board square.current-premove {
+  background-color: rgba(20, 30, 85, 0.5);
+}
+.cg-wrap piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12.5%;
+  height: 12.5%;
+  background-size: cover;
+  z-index: 2;
+  will-change: transform;
+  pointer-events: none;
+}
+cg-board piece.dragging {
+  cursor: move;
+  z-index: 10;
+}
+cg-board piece.anim {
+  z-index: 8;
+}
+cg-board piece.fading {
+  z-index: 1;
+  opacity: 0.5;
+}
+.cg-wrap square.move-dest:hover {
+  background-color: rgba(20, 85, 30, 0.3);
+}
+.cg-wrap piece.ghost {
+  opacity: 0.3;
+}
+.cg-wrap .cg-shapes,
+.cg-wrap .cg-custom-svgs {
+  overflow: visible;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.cg-wrap .cg-shapes {
+  opacity: 0.6;
+  z-index: 2;
+}
+.cg-wrap .cg-custom-svgs {
+  /* over piece.anim = 8, but under piece.dragging = 10 */
+  z-index: 9;
+}
+.cg-wrap coords {
+  position: absolute;
+  display: flex;
+  pointer-events: none;
+  opacity: 0.8;
+  font-size: 9px;
+}
+.cg-wrap coords.ranks {
+  visibility: hidden;
+  right: -15px;
+  top: 0;
+  flex-flow: column-reverse;
+  height: 100%;
+  width: 12px;
+}
+.cg-wrap coords.ranks.black {
+  flex-flow: column;
+}
+.cg-wrap coords.files {
+  visibility: hidden;
+  /* bottom: -11px; */
+  left: 0;
+  flex-flow: row;
+  width: 100%;
+  height: 16px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.cg-wrap coords.files.black {
+  flex-flow: row-reverse;
+}
+.cg-wrap coords coord {
+  flex: 1 1 auto;
+}
+/* .cg-wrap coords.ranks coord {
+  transform: translateY(39%);
+} */
+
+#flip {
+  background-color: #3b82f6;
+  max-height: 100px;
+}
+
+.selected {
+  border: 1px solid black;
+}
+
+.line {
+  display: block;
+  padding-inline-start: 7px;
+  position: relative;
+}
+
+.line > .branch {
+  border-inline-start: 2px solid var(--c-gray-200);
+  margin-inline-start: -9px;
+  position: absolute;
+  width: 8px;
+  height: 100%;
+}
+
+.line > .branch::before {
+  margin-top: 0.8em;
+  content: ' ';
+  border-top: 2px solid var(--c-gray-200);
+  position: absolute;
+  width: 7px;
+  height: 6px;
+}
+
+/* The last sibling's connector stops at its own elbow instead of running the
+   full height of the block, so the trunk doesn't dangle past the last line. */
+.line:last-child > .branch {
+  height: calc(0.8em + 2px);
+}
+
+.line .comment {
+  display: inline;
+  color: $c-font-dim;
+  word-wrap: break-word;
+  padding: 0 5px 0 3px;
+  vertical-align: top;
+}
+
+.lines {
+  display: block;
+  margin-block: 2px;
+  margin-inline-start: 6px;
+  padding-inline-start: 2px;
+  overflow-x: clip;
+}
+
+.lines:last-child {
+  margin-bottom: 0;
+}
+
+/* a lone sideline needs no trunk to hang its siblings from */
+.lines.single {
+  border-inline-start: none;
+}
+
+/* ---------- info glyph ----------
+   The "learn more" marker next to a panel or dialog title: a typed 'i' in a
+   circle, drawn rather than pulled from an icon set. Border and letter both
+   take currentColor, so each place it's used sets one color on the link and
+   the whole mark follows; sized in `em` for the same reason — it scales with
+   whatever type it sits beside. */
+.info-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* roomier than the letter needs: the circle has to clear both the border and
+     the 'i' at this size */
+  width: 1.6em;
+  height: 1.6em;
+  /* same weight as every other frame in the app (--border-w), in px so it
+     doesn't thin out at this small a font-size */
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-sans);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  /* the box does the vertical centering; a line box of its own would fight it */
+  line-height: 1;
+  /* 'i' has no descender, so its ink sits high in a line box that reserves
+     room for one. With border-box sizing this padding shifts the letter down
+     by half its value — just enough to drop the ink onto the circle's center. */
+  padding-top: 0.05em;
+  user-select: none;
+}
+
+/* ---------- scrollbars ----------
+   A grey rectangle with a slight rounding, floating in a bare gutter, and no
+   stepper arrows. Applied to everything rather than a list of named scroll
+   containers: any element that scrolls should look the same, and naming them
+   one by one kept leaving new ones with the browser's default arrowed bar.
+
+   The standard properties are fenced off from Chrome deliberately. Blink
+   honours `scrollbar-width` / `scrollbar-color` *instead of* the
+   ::-webkit-scrollbar pseudo-elements — declaring either one makes it drop
+   every rule below this, which is what put the stepper arrows back. Firefox
+   doesn't support the ::-webkit- pseudos, so it takes this branch and gets the
+   nearest equivalent; Chrome skips it and is styled by the pseudos. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar) transparent;
+  }
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--c-scrollbar);
+  /* The transparent border insets the thumb inside the 9px gutter. Since the
+     background is clipped to the content box, the visible corner radius is
+     this radius minus the border width — 5px here reads as ~3px. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--c-scrollbar-hover);
+  background-clip: content-box;
+}
+
+/* WebKit draws stepper arrows at both ends by default; drop them so the bar
+   is nothing but track and thumb. */
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

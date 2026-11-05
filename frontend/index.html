@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="public/faviconboys.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opening Training | chessrepeat.com</title>
+
+    <!-- Resolve the theme before the first paint. This is inline and in <head>
+         on purpose: anything deferred to the module bundle runs after the
+         browser has already painted, which is a full white frame before a dark
+         page. Kept in sync with src/store/theme.ts, which reads the key below
+         and stamps the same attribute for every change after this one. -->
+    <script>
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('chessrepeat:theme');
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <script type="module" src="/src/main.tsx"></script>
+    <div id="root"></div>
+  </body>
+</html>

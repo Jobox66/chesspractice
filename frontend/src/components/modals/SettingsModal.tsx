@@ -1,0 +1,142 @@
+import React, { useState } from 'react';
+import { XIcon } from 'lucide-react';
+import { useTrainerStore } from '../../store/state';
+import Divider from '../common/Divider';
+import ToggleGroup from '../common/ToggleGroup';
+import { NodeSearch } from '../../types/training';
+import { SrsConfig, defaultSrsConfig } from '../../util/srs';
+import './modals.css';
+import './SettingsModal.css';
+
+const SettingsModal: React.FC<{ setSettingsOpen: (b: boolean) => void }> = ({ setSettingsOpen }) => {
+  const searchConfig = useTrainerStore((s) => s.searchConfig);
+  const setSearchConfig = useTrainerStore((s) => s.setSearchConfig);
+  const srsConfig = useTrainerStore((s) => s.srsConfig);
+  const setSrsConfig = useTrainerStore((s) => s.setSrsConfig);
+
+  const [draft, setDraft] = useState<NodeSearch>({ ...searchConfig });
+  const [srsDraft, setSrsDraft] = useState<SrsConfig>({ ...srsConfig });
+
+  const isSearchDirty = draft.algorithm !== searchConfig.algorithm || draft.limit !== searchConfig.limit;
+  const isSrsDirty =
+    srsDraft.request_retention !== srsConfig.request_retention ||
+    srsDraft.maximum_interval !== srsConfig.maximum_interval ||
+    srsDraft.enable_fuzz !== srsConfig.enable_fuzz ||
+    srsDraft.enable_short_term !== srsConfig.enable_short_term;
+  const isDirty = isSearchDirty || isSrsDirty;
+
+  return (
+    <dialog open className="settings-dialog">
+      <button
+        className="settings-close-btn"
+        aria-label="Close"
+        onClick={() => setSettingsOpen(false)}
+        type="button"
+      >
+        <XIcon />
+      </button>
+
+      <div className="settings-header">
+        <h2>
+          Training Settings
+          <a
+            href="https://github.com/jacokyle01/chessrepeat#spaced-repetition-in-chessrepeat"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Learn how training settings work"
+            aria-label="Learn how training settings work"
+            className="settings-help-link"
+          >
+            <span className="info-glyph" aria-hidden="true">
+              i
+            </span>
+          </a>
+        </h2>
+        <p>Configure spaced repetition and display preferences.</p>
+      </div>
+      <Divider label="Next move" />
+
+      <div className="settings-body">
+        <ToggleGroup
+          label="Get next by"
+          labels={['Breadth', 'Depth']}
+          selected={draft.algorithm === 'bfs' ? 'Breadth' : 'Depth'}
+          onChange={(val) => setDraft({ ...draft, algorithm: val === 'Breadth' ? 'bfs' : 'dfs' })}
+        />
+
+        <div className="settings-field">
+          <label>Max moves to consider</label>
+          <div className="settings-stepper">
+            <button onClick={() => setDraft({ ...draft, limit: Math.max(1, draft.limit - 1) })}>-</button>
+            <span className="settings-stepper-value">{draft.limit}</span>
+            <button onClick={() => setDraft({ ...draft, limit: draft.limit + 1 })}>+</button>
+          </div>
+        </div>
+
+        <Divider label="Memory algorithm" />
+
+        <div className="settings-field">
+          <label>Target recall ({Math.round(srsDraft.request_retention * 100)}%)</label>
+          <input
+            type="range"
+            min={0.7}
+            max={0.99}
+            step={0.01}
+            value={srsDraft.request_retention}
+            onChange={(e) => setSrsDraft({ ...srsDraft, request_retention: parseFloat(e.target.value) })}
+          />
+        </div>
+
+        <div className="settings-field">
+          <label>Maximum interval (days)</label>
+          <input
+            type="number"
+            min={1}
+            max={36500}
+            value={srsDraft.maximum_interval}
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              if (!isNaN(val) && val >= 1) {
+                setSrsDraft({ ...srsDraft, maximum_interval: Math.min(val, 36500) });
+              }
+            }}
+          />
+        </div>
+
+        <ToggleGroup
+          label="Fuzz intervals"
+          labels={['Off', 'On']}
+          selected={srsDraft.enable_fuzz ? 'On' : 'Off'}
+          onChange={(val) => setSrsDraft({ ...srsDraft, enable_fuzz: val === 'On' })}
+        />
+
+        <ToggleGroup
+          label="Short-term learning steps"
+          labels={['Off', 'On']}
+          selected={srsDraft.enable_short_term ? 'On' : 'Off'}
+          onChange={(val) => setSrsDraft({ ...srsDraft, enable_short_term: val === 'On' })}
+        />
+
+        <div className="settings-dirty-slot">
+          <span className={`settings-dirty-notice ${isDirty ? 'is-visible' : ''}`}>
+            Unsaved changes
+          </span>
+        </div>
+
+        <button
+          type="button"
+          className="settings-done-btn"
+          onClick={() => {
+            if (isSearchDirty) setSearchConfig(draft);
+            if (isSrsDirty) setSrsConfig(srsDraft);
+            setSettingsOpen(false);
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </dialog>
+  );
+};
+
+export default SettingsModal;

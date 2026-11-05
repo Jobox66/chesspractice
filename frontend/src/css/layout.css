@@ -1,0 +1,742 @@
+/* ===========================
+   Chessrepeat – responsive layout
+   Single DOM structure. CSS handles
+   mobile (single-column scrollable)
+   vs desktop (three-column fixed).
+   All components always visible.
+   =========================== */
+
+/* ---------- root shell ---------- */
+.app-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.app-root {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-page-bg);
+}
+
+/* ---------- header ---------- */
+#header {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  /* everything but the wordmark is body type */
+  font-family: var(--font-sans);
+  /* Wordmark scales with the viewport so it shrinks on mobile and caps at
+     1.875rem on desktop. This must live here (not in the @container block):
+     an element can't be styled by a container query on a container it
+     establishes itself, and #header *is* the header-bar container. */
+  font-size: clamp(0.9rem, 5vw, 1.875rem);
+  /* gap is in `em`, so it tightens automatically as the font-size shrinks;
+     min keeps it from collapsing entirely on the narrowest phones. */
+  gap: clamp(0.3rem, 2vw, 0.75em);
+  /* TODO put in root component */
+  margin-top: 0.375rem;
+  padding-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  container-name: header-bar;
+  container-type: inline-size;
+}
+
+/* One bottom margin for every item in the bar. The header aligns to flex-end,
+   so this is what lifts the whole row off its bottom edge by the same amount
+   and lands the wordmark, avatar, peer track and links on one line. Applied to
+   the leaves — .header-auth / .header-actions are layout-only wrappers, so
+   margins there would just double up. */
+#header .logo-wrap,
+#header .header-identity,
+#header .header-link,
+#header .header-peers {
+  margin-bottom: 0.25rem;
+}
+
+/* The two recessed tracks are taller than what's inside them by their own
+   0.375rem of padding. Bottom-aligned by box like every other leaf, that
+   padding lifts the avatar, name and peer faces a notch above the wordmark and
+   links they're meant to sit level with. Pulling each box down by that padding
+   aligns what you actually see — their contents — instead of their edges. */
+#header .header-identity,
+#header .header-peers {
+  margin-bottom: -0.125rem;
+}
+
+/* Identity track: avatar, name and the sign-in / sign-out control in one
+   recessed pill, the same object the peer avatars sit in. The track is the
+   item that aligns in the bar, so its contents drop the shared margin and
+   center against each other instead. */
+#header .header-identity {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  background: var(--c-recessed);
+}
+
+#header .header-identity .header-user,
+#header .header-identity .header-link {
+  margin-bottom: 0;
+  align-items: center;
+}
+
+/* the track's own padding already holds the picture off its left edge */
+#header .header-identity .header-avatar {
+  margin-left: 0;
+}
+
+/* Sits immediately right of the wordmark: sign-in, or the signed-in user. */
+#header .header-auth {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* Right-aligned cluster: connected-user avatars + the external links,
+   separated by a dot. */
+#header .header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+#header .header-actions > * + *::before {
+  content: '\00b7';
+  margin-right: 0.5rem;
+  color: var(--c-gray-300);
+}
+
+/* Other users on the same repertoire, sitting in the same recessed light-grey
+   track as the Edit/Learn/Recall segments. The track has no fixed width, so it
+   simply grows as collaborators join. */
+#header .header-peers {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  /* the gap has to clear both avatars' 2px permission rings */
+  gap: 0.5rem;
+  /* the track's padding is what keeps the pictures off its edges */
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  background: var(--c-recessed);
+}
+
+/* Smaller than the signed-in user's own avatar: these are presence, not
+   identity, and the track can hold several of them at once. */
+#header .header-peer {
+  height: 1.125rem;
+  width: 1.125rem;
+  border-radius: 0.25rem;
+}
+
+
+/* Ring color encodes the peer's access: `train` collaborators get the light
+   blue, everyone with full access (owner, `edit`) gets the dark one. */
+#header .header-peer-edit {
+  box-shadow: 0 0 0 2px var(--c-brand-blue);
+}
+
+#header .header-peer-train {
+  box-shadow: 0 0 0 2px var(--c-brand-blue-light);
+}
+
+#header .header-username {
+  font-size: 0.875rem;
+}
+
+#header .header-user svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Signed-in user: avatar + name. */
+#header .header-user {
+  display: flex;
+  align-items: flex-end;
+}
+
+#header .header-avatar {
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 0.375rem;
+  /* keeps the picture off the wordmark on its left and the username on its
+     right, which the header's own gap alone leaves tight; the shared
+     #header leaf margin above handles the lift off the header's edge */
+  margin-inline: 0.25rem;
+}
+
+#header > .logo-wrap {
+  font-family: var(--font-condensed);
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+#header > .logo-wrap img {
+  height: 3rem;
+  width: 3rem;
+  margin-right: 0.5rem;
+}
+
+#header > .logo-wrap .accent {
+  color: var(--c-wordmark-accent);
+}
+
+/* Lighter than the wordmark so the links read as secondary chrome. */
+#header .header-link {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  color: var(--c-gray-500);
+  transition: color 150ms;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#header .header-link span {
+  overflow: hidden;
+}
+
+#header .header-link:hover {
+  color: var(--c-gray-900);
+}
+
+#header .header-link svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* ---- mobile header (narrow container) ----
+   Only *descendants* of #header can be styled here (#header itself is the
+   container and can't query itself — its font-size/gap live in the base rule
+   above). Each link inherits the header's now viewport-scaled font-size, so
+   the icon logos (sized in `em`) shrink in proportion with the wordmark and
+   pack closer together as the screen narrows. The text labels are dropped.
+
+   NOTE: this block must come *after* the base `.header-link svg` rule above —
+   they have equal specificity, so source order is what lets these win. */
+@container header-bar (max-width: 600px) {
+  #header .header-link {
+    font-size: inherit;
+    gap: 0.15em;
+  }
+
+  #header .header-link span {
+    display: none;
+  }
+
+  /* the sign-in label always stays visible, even at the narrowest width. */
+  #header .header-signin span {
+    display: inline;
+  }
+
+  #header .header-link svg {
+    width: 0.95em;
+    height: 0.95em;
+  }
+}
+
+/* ---------- main grid ---------- */
+.app-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* ---------- MOBILE (default): single column, all rows auto ---------- */
+.app-main {
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  grid-template-rows: repeat(5, auto);
+  grid-template-areas:
+    'board'
+    'usertip'
+    'pgn'
+    'repertoire'
+    'schedule';
+  /* breathing room so the last row (memory schedule) isn't flush against the
+     scroll-container edge and clipped. Mirrors the desktop/middle layouts,
+     which already reserve bottom padding. */
+  padding-bottom: 1rem;
+}
+
+/* grid area assignments – min-width:0 lets children shrink inside 1fr columns */
+/* .area-board is a single grid cell holding the board AND its controls
+   (stacked); .area-controls is no longer its own grid area. */
+.area-board {
+  grid-area: board;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.area-usertip {
+  grid-area: usertip;
+  min-width: 0;
+  /* container-query unit (cqi) lets the tip headline scale with the tip's
+     available width, independent of the global breakpoint. */
+  container-type: inline-size;
+  container-name: usertip;
+}
+.area-schedule {
+  grid-area: schedule;
+  min-width: 0;
+}
+
+.area-comment {
+  grid-area: comment;
+  min-width: 0;
+}
+.area-pgn {
+  grid-area: pgn;
+  min-width: 0;
+}
+.area-repertoire {
+  grid-area: repertoire;
+  min-width: 0;
+}
+
+/* Sidebar wrapper: by default it's a layout-transparent shim so its
+   children (repertoire + schedule) participate directly in .app-main's
+   grid (mobile + middle layouts). Desktop overrides this to make the
+   sidebar a real flex column owning the left column. */
+.area-sidebar {
+  display: contents;
+}
+
+/* The card holds only the progress bar + chessboard; the segmented controls
+   sit below it as their own surface, so it's rounded on all four corners. */
+.board-card {
+  background: var(--c-surface);
+  /* extra room under the board so it isn't flush with the card's edge */
+  padding: 0.25rem 0.25rem 0.625rem;
+  border: var(--border-w) solid var(--c-line);
+  border-radius: 0.5rem;
+}
+
+/* controls flush against the board, settings pushed right. Now an inner
+   child of .area-board (not a grid area), so no gap to cancel. */
+.area-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  /* establish container so Edit/Learn/Recall scale with the board's width
+     (controls always sit directly under the board). */
+  container-type: inline-size;
+  container-name: controls;
+}
+
+/* scale training-controls buttons with the board width via container queries.
+   id selector (#training-controls) outranks Tailwind utility classes. */
+#training-controls button,
+#comment-popout-btn {
+  font-size: clamp(0.7rem, 2.75cqi, 1.125rem);
+  padding: clamp(0.25rem, 1.25cqi, 0.5rem) clamp(0.5rem, 2.75cqi, 1rem);
+  gap: clamp(0.25rem, 1.25cqi, 0.5rem);
+}
+
+#training-controls button svg,
+#comment-popout-btn svg {
+  width: clamp(14px, 4.25cqi, 22px);
+  height: clamp(14px, 4.25cqi, 22px);
+}
+
+/* The Edit/Learn/Recall group, the comment popout and the settings button all
+   sit under the board card as segmented controls: an unoutlined recessed
+   track with the selected segment raised out of it as a white chip. */
+/* The padding is what separates the raised chip from the track's edge: the
+   chip is measured off the active button's own box, so whatever room the
+   padding leaves shows as grey around it on all four sides. */
+.control-tab {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background: var(--c-recessed);
+}
+
+/* The transparent border keeps the comment tab (the one segment that does
+   carry an outline) the same size as the rest, so the chip measured off a
+   button never jumps. */
+.control-tab-btn {
+  position: relative;
+  /* above the sliding chip, which is z-index 1 inside the track */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  border: var(--border-w) solid transparent;
+  border-radius: 0.375rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--c-gray-500);
+  transition: color 200ms, background 200ms, border-color 200ms;
+}
+
+/* The chip that marks the active segment. Position/size come from CSS vars
+   measured off the active button, so it slides between segments. */
+.control-tab-chip {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: var(--active-tab-top, 0);
+  width: var(--active-tab-width, 0);
+  height: var(--active-tab-height, 0);
+  /* outlined, so the selected segment is legible as a raised chip and not just
+     a lighter patch of the track */
+  border: 1px solid var(--c-gray-400);
+  border-radius: 0.375rem;
+  background: var(--c-surface);
+  transform: translateX(var(--active-tab-left, 0));
+  transition: transform 200ms, width 200ms, height 200ms, top 200ms, opacity 200ms;
+}
+
+/* nothing selected (or not measured yet): fade the chip out where it stands */
+.control-tab-chip[data-rendered='false'] {
+  opacity: 0;
+  transform: translateX(var(--active-tab-left, 0)) scale(0.9);
+}
+
+/* settings button: same track, and lifts into a chip on hover */
+.settings-btn:hover {
+  color: var(--c-gray-800);
+  background: var(--c-surface);
+}
+
+.settings-btn:active {
+  transform: scale(0.98);
+}
+
+/* ---------- shared panel chrome (chapter / repertoire / schedule) ---------- */
+.panel-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+/* The color pair here is shared with .tip-icon (UserTip.css) — change both
+   together, or the tip's glyph stops matching the panel headers above it. */
+.panel-icon {
+  flex-shrink: 0;
+  display: flex;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  color: var(--c-gray-600);
+  background: var(--c-gray-200);
+}
+
+.panel-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.panel-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--c-gray-800);
+}
+
+/* two-line title block: name over a small uppercase count */
+.panel-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1;
+}
+
+.panel-titles .panel-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-subtitle {
+  margin-top: -0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--c-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Icon-with-optional-label action in a panel header (add / download / copy). */
+.panel-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--c-slate-600);
+  transition: color 150ms, background-color 150ms;
+}
+
+.panel-action:hover:not(:disabled) {
+  color: var(--c-slate-800);
+  background: var(--c-gray-100);
+}
+
+.panel-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.panel-action:disabled {
+  color: var(--c-gray-300);
+  cursor: not-allowed;
+}
+
+/* pgn panel — the grid cell stacks the card and, outside its border, the
+   move navigation centered underneath. */
+.area-pgn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pgn-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--c-surface);
+  border-radius: 0.75rem;
+  border: var(--border-w) solid var(--c-line);
+}
+
+.pgn-controls-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* No horizontal padding at all: the filled move-number gutter runs flush to
+   the card's left edge, and on the right this element wraps the tree's own
+   scroll container — padding here would inset that container and take its
+   scrollbar with it. The moves are held off the scrollbar by `.tree-body`'s
+   padding instead, which sits *inside* the scrollport. */
+.pgn-tree-scroll {
+  max-height: 30vh;
+  padding: 0 0 0.5rem;
+  overflow-y: auto;
+}
+
+/* repertoire panel */
+.area-repertoire {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* stretch to fill the entire grid slot; internal scrolling handles
+     long chapter lists. Never shorter than a quarter of the viewport. */
+  min-height: 25vh;
+  max-height: 100%;
+}
+
+/* schedule */
+.area-schedule {
+}
+
+/* The repertoire card is a query container; Repertoire.css collapses the
+   per-row labels once it gets narrow. */
+#repertoire {
+  container-type: inline-size;
+  container-name: repertoire;
+}
+
+/* ---------- MIDDLE (768px – 1023px): two-column layout ----------
+   Board + controls + tip stack on the left; the chapter (pgn) sits at
+   the top-right with the repertoire list below it. Memory schedule
+   lives inside .area-repertoire and naturally lands bottom-right. */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  #header {
+    padding: 0 1.5rem;
+  }
+
+  .app-main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto 1fr;
+    grid-template-areas:
+      'board     pgn'
+      'usertip   repertoire'
+      'schedule  repertoire';
+    padding: 0 1.5rem 2rem;
+    gap: 0.75rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Tree sits beside the board and is capped to roughly the board's
+     height (board column is 1fr ≈ 50vw minus page padding/gap, and the
+     board is square). Internal scroll handles longer trees. */
+  .area-pgn {
+    grid-row: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .pgn-card {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Repertoire spans the schedule + usertip rows; the last row is 1fr so
+     it actually gets expanding height instead of just content height. */
+  .area-repertoire {
+    grid-row: 2 / 4;
+    min-height: 25vh;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .area-board {
+    align-self: start;
+  }
+
+  .area-schedule {
+    min-height: 0;
+    /* sits compactly right below usertip instead of stretching to fill
+       the 1fr row (that height goes to repertoire, which spans it). */
+    align-self: start;
+  }
+
+  .pgn-tree-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+}
+
+/* ---------- DESKTOP (≥ 1024px): three-column layout ---------- */
+@media (min-width: 1024px) {
+  #header {
+    padding: 0 2.5rem;
+  }
+
+  /* TODO define shrinking strategy w/ respect to chessboard */
+  .app-main {
+    grid-template-columns: minmax(200px, 1fr) 1.15fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    /* pgn lives only in row 1, so it caps at the board's height; the
+       column-3 cell in row 2 is intentionally empty (`.`) and shows the
+       page background through. */
+    grid-template-areas:
+      'sidebar board   pgn'
+      'sidebar usertip .  ';
+    padding: 0 2.5rem 1rem;
+    /* shrink the grid box itself so app-root's background is visible below.
+       padding-bottom won't work here: the chessground is aspect-ratio:1 and
+       forces the grid to overflow, so anything carved out of the grid (a
+       spacer row or padding) gets clipped by overflow:hidden first. */
+    margin-bottom: 3rem;
+    gap: 0.75rem;
+    overflow: hidden;
+  }
+
+  /* Sidebar takes the full left column; repertoire flexes to fill,
+     schedule sits at the bottom sized to its content. */
+  .area-sidebar {
+    display: flex;
+    flex-direction: column;
+    grid-area: sidebar;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    gap: 0.75rem;
+  }
+
+  .area-repertoire {
+    /* size to content, but at least a quarter of the viewport and never
+       taller than half the sidebar; internal scrolling handles overflow. */
+    flex: 0 1 auto;
+    min-height: 25vh;
+    max-height: 50%;
+  }
+
+  .area-schedule {
+    flex: 0 0 35%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .area-pgn {
+    /* sits in row 1 only (board's row) — no `grid-row: 1 / -1` so the
+       pgn panel matches the chessboard's height instead of spanning
+       down through the usertip row. */
+    min-height: 0;
+    min-width: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .pgn-card {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .pgn-tree-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  /* usertip fills the remaining 1fr row beneath the board/controls */
+  .area-usertip {
+    overflow: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .area-comment {
+    min-height: 0;
+    overflow: auto;
+    max-height: 120px;
+  }
+}
+
+/* ---------- modal overlay ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--c-backdrop);
+  z-index: 10;
+}
+
+/* sits just under .settings-dialog (z-index 50) */
+.modal-backdrop-settings {
+  z-index: 40;
+}

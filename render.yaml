@@ -1,0 +1,26 @@
+# Render Blueprint — Dashboard -> New -> Blueprint -> pick this repo.
+# Secrets marked sync:false are prompted for on first deploy.
+services:
+  - type: web
+    name: chessrepeat-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # Neon connection string (Dashboard -> Connect). Keep sslmode=require.
+      # pool_max_conn_idle_time lets idle conns close so Neon can scale to zero.
+      - key: POSTGRES_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      # Comma-separated. Must include the Vercel origin, e.g. https://chess-practice.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      # Opening-explorer service is not deployed on the free tier (needs a
+      # persistent disk); leaving EXPLORER_URL unset disables /explorer.

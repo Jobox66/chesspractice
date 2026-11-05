@@ -1,0 +1,57 @@
+{
+  "name": "chess-prep-2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "pnpm": "9999.9999.9999",
+    "node": ">=22",
+    "npm": "10.9.0"
+  },
+  "devDependencies": {
+    "@types/chess.js": "^0.13.7",
+    "@types/node": "^22.5.2",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
+  },
+  "dependencies": {
+    "@bity/oauth2-auth-code-pkce": "^2.13.0",
+    "@mantine/core": "^8.2.4",
+    "@mantine/hooks": "^8.2.4",
+    "@types/react-calendar-heatmap": "^1.9.0",
+    "chart.js": "^4.5.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "chessground": "^9",
+    "chessops": "^0.14.1",
+    "firebase": "^12.19.0",
+    "idb-keyval": "^6.2.2",
+    "install": "^0.13.0",
+    "jotai": "^2.12.5",
+    "lodash.debounce": "^4.0.8",
+    "lucide-react": "^0.511.0",
+    "npm": "^11.10.0",
+    "prettier": "^3.2.5",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
+    "react": "^19.1.0",
+    "react-calendar-heatmap": "^1.10.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-chessboard": "^4.7.3",
+    "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.14.1",
+    "ts-fsrs": "^5.3.1",
+    "zustand": "^5.0.5"
+  }
+}

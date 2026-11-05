@@ -1,0 +1,95 @@
+package config
+
+import (
+	"log"
+	"os"
+	"strings"
+
+	"github.com/joho/godotenv"
+)
+
+// Config holds every runtime knob the server reads from the environment.
+// Loaded once at startup and passed by value to anything that needs it,
+// so handlers don't reach into os.Getenv at request time.
+type Config struct {
+	ListenAddr     string
+	AllowedOrigins []string
+	PostgresURL    string
+	// FirebaseProjectID is the audience every Firebase ID token must
+	// carry. Find it in the Firebase console under Project settings.
+	FirebaseProjectID string
+	// CookieSecure turns on the Secure flag and the __Host- prefix on
+	// the session cookie. Set COOKIE_SECURE=true in any environment
+	// behind TLS; leave unset for local HTTP development.
+	CookieSecure bool
+	// HintCookieDomain is the Domain attribute applied to the non-secret
+	// session-hint cookie so the SPA can read it across sibling
+	// subdomains (e.g. "chessrepeat.com" when the SPA lives at
+	// chessrepeat.com and the API at api.chessrepeat.com). Leave unset
+	// in local dev where SPA and API share the same host.
+	HintCookieDomain string
+	// ExplorerURL is the base URL of the opening-explorer service, an
+	// internal-only container the backend reaches over the compose
+	// network. The browser never touches it, so no token is involved.
+	// Empty disables the /explorer route.
+	ExplorerURL string
+}
+
+// Load reads .env (if present) and resolves every config value, applying
+// dev-friendly defaults where it's safe to do so. Required values that
+// are missing cause a fatal log.
+func Load() Config {
+	log.Println("loading .env file...")
+	if err := godotenv.Load(); err != nil {
+		log.Println("no .env file found, using process environment")
+	}
+
+	cfg := Config{
+		ListenAddr:       listenAddr(),
+		AllowedOrigins:   splitAndTrim(getEnv("ALLOWED_ORIGINS", "http://localhost:5173")),
+		PostgresURL:      getEnv("POSTGRES_URL", "postgres://localhost:5432/chessrepeat?sslmode=disable"),
+		FirebaseProjectID: strings.TrimSpace(os.Getenv("FIREBASE_PROJECT_ID")),
+		CookieSecure:     strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
+		HintCookieDomain: strings.TrimSpace(os.Getenv("HINT_COOKIE_DOMAIN")),
+		ExplorerURL:      strings.TrimRight(strings.TrimSpace(os.Getenv("EXPLORER_URL")), "/"),
+	}
+
+	if cfg.FirebaseProjectID == "" {
+		log.Fatal("FIREBASE_PROJECT_ID is required")
+	}
+	if len(cfg.AllowedOrigins) == 0 {
+		log.Fatal("ALLOWED_ORIGINS must contain at least one origin")
+	}
+	return cfg
+}
+
+// listenAddr resolves the bind address: LISTEN_ADDR wins, then PORT
+// (injected by PaaS hosts such as Render), then :8080.
+func listenAddr() string {
+	if v := strings.TrimSpace(os.Getenv("LISTEN_ADDR")); v != "" {
+		return v
+	}
+	if p := strings.TrimSpace(os.Getenv("PORT")); p != "" {
+		return ":" + p
+	}
+	return ":8080"
+}
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func splitAndTrim(csv string) []string {
+	parts := strings.Split(csv, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
