@@ -170,12 +170,11 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request, ownerID strin
 		}
 		sessionID = id
 	} else {
-		cookie, err := r.Cookie(auth.SessionCookieName)
-		if err != nil {
+		sessionID = auth.SessionIDFromRequest(r)
+		if sessionID == "" {
 			http.Error(w, "missing session", http.StatusUnauthorized)
-			return err
+			return errors.New("missing session")
 		}
-		sessionID = cookie.Value
 	}
 	sess, err := s.db.FetchSession(r.Context(), sessionID)
 	if err != nil {

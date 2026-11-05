@@ -306,3 +306,69 @@ func TestWSTicket_RequiresSession(t *testing.T) {
 		t.Fatalf("status = %d, want 401", rr.Code)
 	}
 }
+
+func TestLogin_MobileClientGetsSessionToken(t *testing.T) {
+	fs := newFakeStore()
+	stubVerifier(t, &auth.FirebaseClaims{UID: "mobile-sub", Email: "m@example.com"}, nil)
+
+	rr := httptest.NewRecorder()
+	Login(fs, testFirebaseProjectID)(rr, newJSONRequest("POST", "/login", `{"idToken":"tok","username":"mob","client":"mobile"}`))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		SessionToken string `json:"sessionToken"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.SessionToken == "" {
+		t.Fatal("mobile login should return sessionToken")
+	}
+	if _, ok := fs.sessions[body.SessionToken]; !ok {
+		t.Fatal("sessionToken should be a stored session id")
+	}
+
+	// The token works as a bearer credential on session-protected routes.
+	rr = httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/ws-ticket", nil)
+	req.Header.Set("Authorization", "Bearer "+body.SessionToken)
+	WSTicket(fs)(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("bearer ws-ticket status = %d, want 200", rr.Code)
+	}
+
+	// And logging out with it deletes the session.
+	rr = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/logout", nil)
+	req.Header.Set("Authorization", "Bearer "+body.SessionToken)
+	Logout(fs)(rr, req)
+	if _, ok := fs.sessions[body.SessionToken]; ok {
+		t.Fatal("bearer logout should delete the session")
+	}
+}
+
+func TestLogin_BrowserClientGetsNoSessionToken(t *testing.T) {
+	fs := newFakeStore()
+	stubVerifier(t, &auth.FirebaseClaims{UID: "web-sub", Email: "w@example.com"}, nil)
+
+	rr := httptest.NewRecorder()
+	Login(fs, testFirebaseProjectID)(rr, newJSONRequest("POST", "/login", `{"idToken":"tok","username":"webby"}`))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	if strings.Contains(rr.Body.String(), "sessionToken") {
+		t.Fatalf("browser login must not expose the session id: %s", rr.Body.String())
+	}
+}
+
+func TestRequireSession_RejectsUnknownBearer(t *testing.T) {
+	fs := newFakeStore()
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/ws-ticket", nil)
+	req.Header.Set("Authorization", "Bearer not-a-session")
+	WSTicket(fs)(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", rr.Code)
+	}
+}

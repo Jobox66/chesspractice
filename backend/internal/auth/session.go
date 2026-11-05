@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
+	"strings"
 
 	"chesspractice/internal/store"
 )
@@ -122,16 +123,34 @@ func ClearSessionCookies(w http.ResponseWriter) {
 	})
 }
 
-// RequireSession resolves the session cookie and returns the session
-// doc, or writes a 401 and returns ok=false. Small helper to keep the
-// HTTP handlers from repeating the same cookie-parse boilerplate.
+// SessionIDFromRequest returns the opaque session id carried by r: the
+// session cookie (browser) or, failing that, an "Authorization: Bearer
+// <id>" header (the React Native app, which has no cookie jar we rely
+// on). A browser can't attach that header cross-site without a CORS
+// preflight, and WithCORS doesn't allow it, so accepting it opens no
+// CSRF path. Returns "" when neither is present.
+func SessionIDFromRequest(r *http.Request) string {
+	if cookie, err := r.Cookie(SessionCookieName); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+	const prefix = "Bearer "
+	if h := r.Header.Get("Authorization"); len(h) > len(prefix) && strings.EqualFold(h[:len(prefix)], prefix) {
+		return strings.TrimSpace(h[len(prefix):])
+	}
+	return ""
+}
+
+// RequireSession resolves the session (cookie or bearer token, see
+// SessionIDFromRequest) and returns the session doc, or writes a 401 and
+// returns ok=false. Small helper to keep the HTTP handlers from
+// repeating the same parse boilerplate.
 func RequireSession(db store.Repo, w http.ResponseWriter, r *http.Request) (*store.Session, bool) {
-	cookie, err := r.Cookie(SessionCookieName)
-	if err != nil {
+	sessionID := SessionIDFromRequest(r)
+	if sessionID == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		return nil, false
 	}
-	sess, err := db.FetchSession(r.Context(), cookie.Value)
+	sess, err := db.FetchSession(r.Context(), sessionID)
 	if err != nil || sess == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return nil, false

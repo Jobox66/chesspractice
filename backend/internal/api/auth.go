@@ -39,6 +39,11 @@ func Login(db store.Repo, firebaseProjectID string) http.HandlerFunc {
 			// user's stored picture is left alone. Empty falls back to
 			// whatever the identity provider supplied (Google's photo).
 			Picture string `json:"picture"`
+			// Client "mobile" (the React Native app) gets the session id
+			// back in the JSON body as sessionToken, to send later as
+			// "Authorization: Bearer". Browsers leave it empty and only
+			// ever see the session as an HttpOnly cookie.
+			Client string `json:"client"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.IDToken == "" {
 			http.Error(w, "missing idToken", http.StatusBadRequest)
@@ -130,11 +135,17 @@ func Login(db store.Repo, firebaseProjectID string) http.HandlerFunc {
 			return
 		}
 
+		resp := struct {
+			User         domain.User                  `json:"user"`
+			Chapters     []domain.ChapterTreeResponse `json:"chapters"`
+			SessionToken string                       `json:"sessionToken,omitempty"`
+		}{User: user, Chapters: chapters}
+		if body.Client == "mobile" {
+			resp.SessionToken = sess.SessionID
+		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(struct {
-			User     domain.User                  `json:"user"`
-			Chapters []domain.ChapterTreeResponse `json:"chapters"`
-		}{User: user, Chapters: chapters})
+		w.Header().Set("Cache-Control", "no-store")
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 
@@ -246,8 +257,8 @@ func Logout(db store.Repo) http.HandlerFunc {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		if cookie, err := r.Cookie(auth.SessionCookieName); err == nil {
-			if err := db.DeleteSession(r.Context(), cookie.Value); err != nil {
+		if sessionID := auth.SessionIDFromRequest(r); sessionID != "" {
+			if err := db.DeleteSession(r.Context(), sessionID); err != nil {
 				log.Println("failed to delete session:", err)
 			}
 		}

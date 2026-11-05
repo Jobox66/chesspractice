@@ -48,3 +48,19 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: /api
+
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: install
+        working-directory: mobile
+        run: npm ci
+      - name: typecheck
+        working-directory: mobile
+        run: npx tsc --noEmit
