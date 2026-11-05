@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"strings"
 
-	"chessrepeat/internal/api"
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/config"
-	"chessrepeat/internal/store"
-	"chessrepeat/internal/ws"
+	"chesspractice/internal/api"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/config"
+	"chesspractice/internal/store"
+	"chesspractice/internal/ws"
 )
 
 func main() {

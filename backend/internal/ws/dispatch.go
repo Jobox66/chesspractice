@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"chessrepeat/internal/domain"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/domain"
+	"chesspractice/internal/store"
 )
 
 // reloadMessage tells a single client to discard its in-memory tree and

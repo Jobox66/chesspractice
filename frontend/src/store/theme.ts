@@ -5,7 +5,7 @@ export type Theme = 'light' | 'dark';
 // Kept in sync with the inline bootstrap in index.html, which reads the same
 // key and stamps the same attribute before React ever mounts. Both halves have
 // to agree or the page paints one theme and then swaps to the other.
-export const THEME_KEY = 'chessrepeat:theme';
+export const THEME_KEY = 'chesspractice:theme';
 
 function systemTheme(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

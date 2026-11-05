@@ -69,7 +69,7 @@ func main() {
 	mux := http.NewServeMux()
 	// The explorer is an internal-only service (never routed from the
 	// public internet), so there's no auth: reachability is the boundary.
-	// Only the chessrepeat backend and the on-box import CLI can connect.
+	// Only the chesspractice backend and the on-box import CLI can connect.
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, "ok")

@@ -64,7 +64,7 @@ export const pgnFromRepertoire = (repertoire: Chapter[]) => {
 
 export const pgnFromChapter = (chapter: Chapter): string => {
   const headers = new Map<string, string>();
-  headers.set('ChessrepeatChapterName', chapter.name);
+  headers.set('ChesspracticeChapterName', chapter.name);
 
   const pos = startingPosition(defaultHeaders()).unwrap();
   const annotatedMoves = transform(chapter.root, pos, (pos, node) => {

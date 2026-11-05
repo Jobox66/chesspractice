@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/domain"
 
 	"github.com/jackc/pgx/v5"
 )

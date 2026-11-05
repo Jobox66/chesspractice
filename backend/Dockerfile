@@ -10,12 +10,12 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" \
-    -o /out/chessrepeat ./cmd/server
+    -o /out/chesspractice ./cmd/server
 
 # Runtime stage: distroless static. No shell, no package manager, runs
 # as nonroot. Smaller attack surface than alpine.
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/chessrepeat /chessrepeat
+COPY --from=build /out/chesspractice /chesspractice
 EXPOSE 8080
 USER nonroot:nonroot
-ENTRYPOINT ["/chessrepeat"]
+ENTRYPOINT ["/chesspractice"]

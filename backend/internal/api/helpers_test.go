@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/domain"
 )
 
 const testFirebaseProjectID = "test-firebase-project"

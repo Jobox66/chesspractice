@@ -11,7 +11,7 @@
 //   - sidelines nest as `.lines > .line`, and a lone short sub-variation is
 //     folded into parentheses inline after its first move instead of nesting.
 //
-// Disclosure (collapsing) and forced variations aren't part of chessrepeat's
+// Disclosure (collapsing) and forced variations aren't part of chesspractice's
 // data model, so those branches of the lichess code are left out.
 import { useTrainerStore, MAX_COMMENT_CHARS } from '../../store/state';
 import { useAppContextMenu } from './ContextMenuProvider';

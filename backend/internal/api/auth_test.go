@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"chessrepeat/internal/auth"
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/auth"
+	"chesspractice/internal/domain"
 )
 
 func TestLogin_NeedsUsernameOnFirstSignup(t *testing.T) {

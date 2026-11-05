@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"net/http"
 
-	"chessrepeat/internal/store"
+	"chesspractice/internal/store"
 )
 
 // SessionCookieName is the HTTP-only cookie that carries the opaque
@@ -14,14 +14,14 @@ import (
 // at startup by Init: in secure mode it gains the `__Host-` prefix,
 // which forbids a Domain attribute, requires Path=/, and refuses to be
 // set over plaintext — three properties the browser then enforces.
-var SessionCookieName = "chessrepeat_session"
+var SessionCookieName = "chesspractice_session"
 
 // SessionHintCookieName is a non-HttpOnly companion cookie so the
 // frontend can cheaply tell whether a session exists without probing
 // /me. It carries no secret — just a flag — so exposing it to JS is
 // safe. Name is *not* prefixed in secure mode because the SPA reads it
 // by name (frontend/src/hooks/useStartup.ts).
-const SessionHintCookieName = "chessrepeat_has_session"
+const SessionHintCookieName = "chesspractice_has_session"
 
 // secureCookies toggles the Secure flag on every cookie we set, plus
 // the __Host- prefix on SessionCookieName. Configured at startup via
@@ -49,7 +49,7 @@ func Init(secure bool, hintDomain string) {
 	secureCookies = secure
 	hintCookieDomain = hintDomain
 	if secure {
-		SessionCookieName = "__Host-chessrepeat_session"
+		SessionCookieName = "__Host-chesspractice_session"
 	}
 }
 

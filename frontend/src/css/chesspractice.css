@@ -1,5 +1,5 @@
 /* ===========================
-   Chessrepeat.tsx — pieces owned by the root screen:
+   Chesspractice.tsx — pieces owned by the root screen:
    the progress bar above the board, the chapter (pgn) panel header,
    and the floating "+time" reward that pops on a correct recall.
    The grid shell itself lives in layout.css.
@@ -7,7 +7,7 @@
 
 /* ---------- progress bar above the board ---------- */
 /* ---cg-width is chessground's rendered board width, published on
-   .board-card (see Chessrepeat.tsx). The board is floored to a whole number
+   .board-card (see Chesspractice.tsx). The board is floored to a whole number
    of 8 device pixels, so 100% of the card would overhang its right edge by
    up to 8px. */
 .board-progress {

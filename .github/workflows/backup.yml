@@ -1,0 +1,69 @@
+name: backup
+
+# Nightly encrypted pg_dump of the Neon database, kept as a workflow
+# artifact. The repo is public, so the dump is GPG-encrypted before upload.
+#
+# Setup (repo Settings -> Secrets and variables -> Actions):
+#   secret   NEON_BACKUP_URL    plain Neon connection string, e.g.
+#                               postgresql://USER:PASS@HOST/neondb?sslmode=require
+#                               (NO pool_* params — those are pgx-only and
+#                               pg_dump rejects them)
+#   secret   BACKUP_PASSPHRASE  long random passphrase; store it somewhere
+#                               safe, without it backups can't be restored
+#   variable PG_MAJOR           optional, Postgres major of the Neon project
+#                               (default 16). pg_dump must be >= server version.
+#
+# Restore: see DEPLOY.md -> "Backup & restore".
+
+on:
+  schedule:
+    - cron: '0 19 * * *' # 02:00 Asia/Ho_Chi_Minh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: check secrets
+        env:
+          DATABASE_URL: ${{ secrets.NEON_BACKUP_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::error::Set the NEON_BACKUP_URL and BACKUP_PASSPHRASE repository secrets."
+            exit 1
+          fi
+
+      - name: pg_dump
+        env:
+          DATABASE_URL: ${{ secrets.NEON_BACKUP_URL }}
+          PG_MAJOR: ${{ vars.PG_MAJOR || '16' }}
+        run: |
+          set -euo pipefail
+          docker run --rm -e DATABASE_URL "postgres:${PG_MAJOR}-alpine" \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL"' > backup.dump
+          test -s backup.dump
+          ls -l backup.dump
+
+      - name: encrypt
+        id: encrypt
+        env:
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          out="chesspractice-$(date -u +%Y-%m-%d).dump.gpg"
+          printf '%s' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o "$out" backup.dump
+          rm backup.dump
+          echo "file=$out" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.encrypt.outputs.file }}
+          path: ${{ steps.encrypt.outputs.file }}
+          retention-days: 30
+          if-no-files-found: error

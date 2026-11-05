@@ -1,4 +1,4 @@
-module github.com/jacokyle01/chessrepeat-explorer
+module chesspractice-explorer
 
 go 1.26.0
 

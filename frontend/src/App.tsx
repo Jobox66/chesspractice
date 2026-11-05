@@ -1,12 +1,14 @@
 import React from 'react';
-import Chessrepeat from './Chessrepeat';
+import Chesspractice from './Chesspractice';
 import { LoginModal } from './components/modals/LoginModal';
+import { ServerWakeBanner } from './components/ServerWakeBanner';
 
 const App: React.FC = () => {
   return (
     <main className="app-shell">
-      <Chessrepeat />
+      <Chesspractice />
       <LoginModal />
+      <ServerWakeBanner />
     </main>
   );
 };

@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/domain"
 )
 
 // Repo is the persistence-layer contract used by every HTTP handler

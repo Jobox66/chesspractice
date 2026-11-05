@@ -17,7 +17,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const testProject = "chessrepeat-test"
+const testProject = "chesspractice-test"
 
 // testSigner is an RSA key plus a self-signed cert for it, served the
 // way Google serves securetoken certs: {"<kid>": "<PEM>"}.

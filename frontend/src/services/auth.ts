@@ -1,6 +1,7 @@
 import { useAuthStore } from '../store/auth';
 import { useTrainerStore } from '../store/state';
 import { parseChapters } from '../util/chapters';
+import { ensureServerAwake } from './serverWake';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -35,6 +36,9 @@ export async function exchangeIdToken(
   idToken: string,
   signup?: { username: string; picture: string },
 ): Promise<ExchangeResult> {
+  // The free-tier backend may still be asleep; wait for it (with a
+  // banner) so the login POST doesn't hit a proxy timeout.
+  await ensureServerAwake();
   let res: Response;
   try {
     res = await fetch(`${API_URL}/login`, {

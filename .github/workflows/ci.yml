@@ -25,6 +25,11 @@ jobs:
       - name: test
         working-directory: backend
         run: go test ./...
+      - name: explorer vet + test
+        working-directory: explorer
+        run: |
+          go vet ./...
+          go test ./...
 
   frontend:
     runs-on: ubuntu-latest

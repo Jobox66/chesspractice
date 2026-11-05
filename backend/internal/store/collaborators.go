@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"chessrepeat/internal/domain"
+	"chesspractice/internal/domain"
 	"github.com/jackc/pgx/v5"
 )
 

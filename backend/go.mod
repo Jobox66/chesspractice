@@ -1,4 +1,4 @@
-module chessrepeat
+module chesspractice
 
 go 1.26.1
 

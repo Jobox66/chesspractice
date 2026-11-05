@@ -1,0 +1,37 @@
+.server-wake {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--c-surface, #fff);
+  color: var(--c-gray-800, #1f2937);
+  border: 1px solid var(--c-line, #d1d5db);
+  box-shadow: var(--shadow-lg, 0 4px 12px rgb(0 0 0 / 0.15));
+  font-size: 14px;
+}
+
+.server-wake button {
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--c-brand-blue, #2563eb);
+  color: #fff;
+  font-weight: 600;
+}
+
+.server-wake__spinner {
+  flex: none;
+  animation: server-wake-spin 1s linear infinite;
+}
+
+@keyframes server-wake-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"chessrepeat/internal/ratelimit"
-	"chessrepeat/internal/store"
+	"chesspractice/internal/ratelimit"
+	"chesspractice/internal/store"
 )
 
 // Limits caps the burst (capacity) and steady-state rate (per second)
