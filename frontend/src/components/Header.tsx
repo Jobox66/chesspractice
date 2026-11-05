@@ -1,4 +1,4 @@
-import { SiDiscord, SiGithub } from 'react-icons/si';
+import { SiGithub } from 'react-icons/si';
 import { LogIn, LogOut, Moon, Sun, User } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { useThemeStore } from '../store/theme';
@@ -29,7 +29,7 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
     <div id="header">
       <div className="logo-wrap">
         <span>chess</span>
-        <span className="accent">repeat</span>
+        <span className="accent">practice</span>
       </div>
 
       {/* Identity sits next to the wordmark; the links are pushed right. Who
@@ -123,17 +123,6 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
           <span>{isDark ? 'light mode' : 'dark mode'}</span>
           {isDark ? <Sun /> : <Moon />}
         </button>
-
-        <a
-          href="https://discord.gg/xhjra9W6Bh"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Join our Discord"
-          className="header-link"
-        >
-          <span>join discord</span>
-          <SiDiscord />
-        </a>
 
         <a
           href="https://github.com/Jobox66/chesspractice"

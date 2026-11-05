@@ -39,7 +39,9 @@ body {
   height: 100vh;
   width: 100vw;
   overflow: hidden; /* Prevents scrolling on the whole page */
-  font-family: 'Fira Sans', 'Roboto', sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   /* Match .app-root so no white shows through any gap at the top/bottom
      (mobile dvh/vh mismatch, header margin, sub-pixel rounding, overscroll). */
   background: var(--c-page-bg);

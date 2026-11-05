@@ -177,6 +177,8 @@
 
 #header > .logo-wrap {
   font-family: var(--font-condensed);
+  font-weight: 700;
+  letter-spacing: -0.03em;
   display: flex;
   align-items: flex-end;
   flex-shrink: 0;
@@ -470,8 +472,9 @@
 .panel-titles {
   display: flex;
   flex-direction: column;
+  gap: 0.125rem;
   min-width: 0;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .panel-titles .panel-title {
@@ -481,12 +484,11 @@
 }
 
 .panel-subtitle {
-  margin-top: -0.125rem;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--c-gray-500);
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.06em;
 }
 
 /* Icon-with-optional-label action in a panel header (add / download / copy). */

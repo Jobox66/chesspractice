@@ -23,9 +23,11 @@
   color-scheme: light;
 
   /* fonts (previously tailwind.config.js -> theme.extend.fontFamily) */
-  --font-sans: 'Fira Sans', 'Roboto', sans-serif;
-  --font-roboto: 'Roboto', sans-serif;
-  --font-condensed: 'Roboto Condensed', 'Roboto', sans-serif;
+  /* One modern UI face everywhere (good Vietnamese coverage); the old
+     roboto/condensed tokens now alias it so existing rules keep working. */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-roboto: var(--font-sans);
+  --font-condensed: var(--font-sans);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
 
