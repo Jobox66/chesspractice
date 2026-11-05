@@ -34,18 +34,26 @@ git pull
 
 ## Bước 2. Firebase (đăng nhập)
 
-1. <https://console.firebase.google.com> → tạo project (gói Spark, free).
-2. **Authentication → Sign-in method** → bật **Google** (và Email/Password nếu muốn).
-3. **Project settings → Your apps → Web (`</>`)** → đăng ký app → giữ lại các giá trị
-   `apiKey`, `authDomain`, `projectId`, `storageBucket` cho bước 5.
-
-> Upload ảnh đại diện lúc đăng ký cần Firebase Storage. Nếu Firebase đòi nâng gói (Blaze) để bật Storage thì bỏ qua:
-> đăng nhập Google vẫn dùng ảnh Google, chỉ là không upload được ảnh riêng.
+1. <https://console.firebase.google.com> → **Create a project** → tên `chesspractice`.
+   Google Analytics: **tắt** (không cần). Gói mặc định là **Spark** (free), giữ nguyên.
+2. **Build → Authentication → Get started → Sign-in method → Google → Enable**
+   → chọn *Project support email* → **Save**. (Email/Password: bật thêm nếu muốn.)
+3. **⚙ Project settings → General → Your apps → Web (`</>`)** → nickname `chesspractice-web`,
+   **không** tick Firebase Hosting → **Register app** → giữ lại `apiKey`, `authDomain`, `projectId` cho bước 3 và bước 5.
+4. **Không bật Storage.** Từ 02/2026, Storage bắt buộc gói Blaze (phải gắn thẻ thanh toán). Storage chỉ dùng để upload
+   ảnh đại diện lúc đăng ký: thiếu nó, nút upload báo lỗi nhưng đăng ký và đăng nhập vẫn chạy (Google dùng ảnh Google).
+   Vì vậy để trống `VITE_FIREBASE_STORAGE_BUCKET` ở bước 5.
 
 ## Bước 3. Render (backend)
 
-1. <https://render.com> → **New → Blueprint** → chọn repo `chesspractice` → Render đọc [render.yaml](render.yaml).
-2. Điền biến môi trường được hỏi:
+1. <https://render.com> → **Sign in with GitHub** → cho phép truy cập **Only select repositories → `chesspractice`**.
+2. **New → Blueprint** → chọn repo `Jobox66/chesspractice`.
+   - **Blueprint Name**: `chesspractice`
+   - **Branch**: `main`
+   - **Blueprint Path**: để trống (mặc định `render.yaml`)
+
+   Render đọc [render.yaml](render.yaml) và hiện sẵn service `chesspractice-backend` (Docker, Free, Singapore).
+3. Điền 3 biến được hỏi (chỉ hỏi lần đầu; về sau sửa ở service → **Environment**) rồi bấm **Deploy Blueprint**:
 
    | Biến | Giá trị |
    |---|---|
@@ -54,8 +62,15 @@ git pull
    | `ALLOWED_ORIGINS` | `FRONTEND`, ví dụ `https://chesspractice.vercel.app` (không có `/` ở cuối) |
 
    `ALLOWED_ORIGINS` có thể điền theo tên project Vercel bạn định đặt; nếu sai thì sửa lại ở bước 6.
-3. Chờ deploy xong (khoảng 3–5 phút). Copy địa chỉ service, đây là `BACKEND`.
-4. Kiểm tra: mở `BACKEND/healthz` → trang trắng, không báo lỗi là OK.
+4. Mở service `chesspractice-backend` → tab **Logs**, chờ build xong (khoảng 3–5 phút), tới khi thấy
+   `server ready on :10000` (cổng do Render tự cấp; số cổng có thể khác).
+5. Copy địa chỉ ở đầu trang service (dạng `https://chesspractice-backend.onrender.com`; nếu tên đã có người dùng,
+   Render thêm hậu tố như `-ab12`). Đây là `BACKEND`.
+6. Kiểm tra: mở `BACKEND/healthz` → trang trắng, không báo lỗi là OK.
+
+> Nếu Render không cho tạo Blueprint (ví dụ đòi thẻ), tạo tay: **New → Web Service** → repo `chesspractice` →
+> Language **Docker**, Branch `main`, Region **Singapore**, Root Directory `backend`, Instance Type **Free**,
+> thêm 4 biến môi trường (3 biến ở trên + `COOKIE_SECURE=true`), Advanced → Health Check Path `/healthz`.
 
 ## Bước 4. Trỏ frontend về backend
 
@@ -81,7 +96,7 @@ git push
    | `VITE_FIREBASE_API_KEY` | `apiKey` |
    | `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
    | `VITE_FIREBASE_PROJECT_ID` | `projectId` |
-   | `VITE_FIREBASE_STORAGE_BUCKET` | `storageBucket` |
+   | `VITE_FIREBASE_STORAGE_BUCKET` | để trống (xem bước 2.4) |
 
 4. **Deploy**. Domain hiển thị ở mục **Domains** chính là `FRONTEND`.
 
@@ -123,7 +138,7 @@ gpg -d -o backup.dump chesspractice-YYYY-MM-DD.dump.gpg
 | Bấm đăng nhập báo `auth/unauthorized-domain` | Chưa thêm domain Vercel vào Firebase | Bước 6.1 |
 | Mở app, gọi `/api/...` trả 404 | `vercel.json` vẫn là `YOUR-BACKEND` hoặc sai host | Bước 4 |
 | Đăng nhập được nhưng không đồng bộ giữa 2 thiết bị | WebSocket bị chặn vì `ALLOWED_ORIGINS` sai | Bước 6.2, kiểm tra không có `/` ở cuối |
-| Render deploy lỗi `FIREBASE_PROJECT_ID is required` | Thiếu biến | Bước 3.2 |
+| Render deploy lỗi `FIREBASE_PROJECT_ID is required` | Thiếu biến | Service → **Environment** |
 | Render log báo lỗi kết nối Postgres | `POSTGRES_URL` sai hoặc thiếu `sslmode=require` | Copy lại từ Neon |
 | Workflow backup lỗi `invalid URI query parameter` | `NEON_BACKUP_URL` có `pool_max_conn_idle_time` | Bỏ tham số đó (bước 7) |
 | Workflow backup không tự chạy nữa | GitHub tắt lịch sau 60 ngày repo không có hoạt động | Actions → backup → **Enable workflow** |
