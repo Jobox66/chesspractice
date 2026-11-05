@@ -86,7 +86,8 @@ git push
 ## Bước 5. Vercel (frontend)
 
 1. <https://vercel.com> → **Add New → Project** → import repo `chesspractice`.
-2. **Project Name**: `chesspractice` (quyết định `FRONTEND`). **Root Directory**: `frontend`.
+2. **Project Name**: `chesspractice` (quyết định `FRONTEND`). **Root Directory**: chọn đúng thư mục `frontend`
+   (không chọn thư mục con) → Continue. **Framework Preset**: Vite. **Build and Output Settings**: để mặc định.
 3. **Environment Variables**:
 
    | Biến | Giá trị |
@@ -96,8 +97,9 @@ git push
    | `VITE_FIREBASE_API_KEY` | `apiKey` |
    | `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
    | `VITE_FIREBASE_PROJECT_ID` | `projectId` |
-   | `VITE_FIREBASE_STORAGE_BUCKET` | để trống (xem bước 2.4) |
 
+   Không thêm `VITE_FIREBASE_STORAGE_BUCKET` (không dùng Storage, xem bước 2.4).
+   Biến `VITE_*` được ghi cố định vào code lúc build: sửa biến xong phải **Deployments → … → Redeploy**.
 4. **Deploy**. Domain hiển thị ở mục **Domains** chính là `FRONTEND`.
 
 ## Bước 6. Nối các phần lại

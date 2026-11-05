@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env 
+
+# Vercel env import file (local only)
+vercel.env
