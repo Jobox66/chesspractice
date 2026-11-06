@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { signOut } from "firebase/auth";
 import { firebaseAuth } from "../lib/firebase";
+import { setSyncKey } from "../lib/syncKey";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,6 +17,9 @@ export type AuthUser = {
 
 type AuthState = {
   user: AuthUser | null;
+  // Set once the startup session check (useStartup) has finished, so pages
+  // can tell "signed out" from "not known yet".
+  checked: boolean;
   // Whether the login overlay is open. Replaces the old /login route.
   showLogin: boolean;
 
@@ -29,6 +33,7 @@ type AuthState = {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  checked: false,
   showLogin: false,
 
   isAuthenticated: () => !!get().user,
@@ -46,6 +51,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }).catch((err) => console.warn('logout request failed', err));
 
     set({ user: null });
+
+    // a remembered sync key would sign straight back in on the next load
+    setSyncKey(null);
 
     // drop the Firebase client session too so the next sign-in starts
     // from the account chooser rather than silently reusing this one

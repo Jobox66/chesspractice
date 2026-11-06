@@ -59,5 +59,23 @@ export function readLocalChapters(): any[] {
 }
 
 export function hasLocalChapters(): boolean {
-  return chaptersDir().list().some((i) => i instanceof File && i.name.endsWith('.json'));
+  return chaptersDir()
+    .list()
+    .some((i) => i instanceof File && i.name.endsWith('.json'));
+}
+
+// The owner's sync key, kept so an expired session signs back in silently.
+const SYNC_KEY = 'chesspractice.syncKey';
+
+export async function loadSyncKey(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(SYNC_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSyncKey(key: string | null): Promise<void> {
+  if (key) await SecureStore.setItemAsync(SYNC_KEY, key);
+  else await SecureStore.deleteItemAsync(SYNC_KEY);
 }

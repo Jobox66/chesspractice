@@ -12,14 +12,16 @@ import type { Card } from '../core/srs';
 import { deleteNodeAt, nodeAtPathOrNull } from '../core/tree';
 import { chapterFromPgn, parseChapters, sortChapters, withCounts } from '../core/training';
 import { PLAYGROUND_KEY, type Chapter, type TrainableNode } from '../core/types';
-import { api, ApiError, setApiToken } from '../services/api';
+import { api, ApiError, keyLogin, setApiToken } from '../services/api';
 import { syncSocket } from '../services/socket';
 import {
   deleteLocalChapter,
   hasLocalChapters,
   loadSession,
+  loadSyncKey,
   readLocalChapters,
   saveSession,
+  saveSyncKey,
   writeLocalChapter,
 } from '../services/storage';
 
@@ -42,6 +44,8 @@ interface AppState {
   // due counts drift with the clock; recompute them
   recount: () => void;
   signedIn: (token: string, user: User, chapters: any[]) => Promise<void>;
+  // owner's sync key: sign in and remember the key on the phone
+  signInWithKey: (key: string) => Promise<void>;
   logout: () => Promise<void>;
 
   addChapter: (c: Chapter) => Promise<void>;
@@ -79,6 +83,22 @@ export const useApp = create<AppState>((set, get) => {
     if (c) writeLocalChapter(c);
   };
 
+  // Sign in with the sync key stored on the phone, if any. Returns
+  // whether it worked; a key the server rejects (401) is forgotten.
+  async function loginWithStoredKey(): Promise<boolean> {
+    const key = await loadSyncKey();
+    if (!key) return false;
+    try {
+      const res = await keyLogin(key);
+      await get().signedIn(res.token, res.user, res.chapters);
+      return true;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) await saveSyncKey(null);
+      set({ error: e instanceof Error ? e.message : String(e) });
+      return false;
+    }
+  }
+
   async function fetchServer(): Promise<void> {
     const { user } = get();
     if (!user) return;
@@ -88,7 +108,13 @@ export const useApp = create<AppState>((set, get) => {
       set({ repertoire: parseChapters(data?.chapters, user.username) });
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        // session expired or revoked: back to offline mode
+        // session expired or revoked: a stored sync key signs straight
+        // back in; otherwise back to offline mode
+        syncSocket.stop();
+        if (await loginWithStoredKey()) return;
+        // key still stored = it wasn't rejected, the server just couldn't
+        // be reached: stay signed in, pull-to-refresh retries
+        if (await loadSyncKey()) return;
         await get().logout();
         set({ error: 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.' });
         return;
@@ -159,12 +185,37 @@ export const useApp = create<AppState>((set, get) => {
         await fetchServer();
       } else {
         set({ repertoire: loadLocal(), ready: true });
+        // stored sync key but no session: show the offline list while
+        // the (maybe sleeping) server signs us in
+        if (await loadSyncKey()) {
+          set({ loading: true });
+          try {
+            await loginWithStoredKey();
+          } finally {
+            set({ loading: false });
+          }
+        }
       }
     },
 
+    signInWithKey: async (key) => {
+      const res = await keyLogin(key);
+      await saveSyncKey(key);
+      await get().signedIn(res.token, res.user, res.chapters);
+    },
+
     refresh: async () => {
-      if (get().user) await fetchServer();
-      else set({ repertoire: loadLocal() });
+      if (get().user) return fetchServer();
+      set({ repertoire: loadLocal() });
+      // a stored key that couldn't sign in at launch (no network): retry
+      if (await loadSyncKey()) {
+        set({ loading: true, error: null });
+        try {
+          await loginWithStoredKey();
+        } finally {
+          set({ loading: false });
+        }
+      }
     },
 
     recount: () => set((s) => ({ repertoire: s.repertoire.map((c) => withCounts(c, get().key())) })),
@@ -184,6 +235,8 @@ export const useApp = create<AppState>((set, get) => {
         api('/logout', { method: 'POST' }).catch(() => {});
       }
       await saveSession(null);
+      // otherwise the next launch would sign straight back in
+      await saveSyncKey(null);
       setApiToken(null);
       set({ user: null, repertoire: loadLocal(), error: null });
     },
@@ -204,7 +257,8 @@ export const useApp = create<AppState>((set, get) => {
       } catch (e) {
         let msg = e instanceof Error ? e.message : String(e);
         if (e instanceof ApiError && e.status === 413) msg = 'Chương vượt giới hạn số nước đi trên server.';
-        if (e instanceof ApiError && e.status === 409) msg = 'Repertoire đã đạt giới hạn số chương trên server.';
+        if (e instanceof ApiError && e.status === 409)
+          msg = 'Repertoire đã đạt giới hạn số chương trên server.';
         await fetchServer();
         throw new Error(msg);
       }

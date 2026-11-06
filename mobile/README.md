@@ -7,7 +7,7 @@ App luyện khai cuộc trên điện thoại, dùng chung tài khoản và dữ
 | App | Expo SDK 58 (React Native 0.88), Expo Router, TypeScript |
 | Bàn cờ | Tự vẽ bằng `react-native-svg` (quân Merida của bản web), chạm hoặc kéo để đi |
 | Logic cờ, SRS | `chessops` 0.14, `ts-fsrs` 5.3 (cùng phiên bản với web để card FSRS khớp nhau) |
-| Đăng nhập | Firebase Auth REST (email + mật khẩu) → `POST /login` với `client: "mobile"` → nhận `sessionToken`, gửi lại dưới dạng `Authorization: Bearer` |
+| Đăng nhập | **Khoá đồng bộ** (`POST /login-key`, khoá = `SYNC_KEY` trên Render, lưu trong `expo-secure-store`, phiên hết hạn thì tự đăng nhập lại), hoặc Firebase Auth REST (email + mật khẩu) → `POST /login`. Cả hai gửi `client: "mobile"` → nhận `sessionToken`, gửi lại dưới dạng `Authorization: Bearer` |
 | Đồng bộ | HTTP (`/repertoire`, `/chapter`) + WebSocket như web (`training_updated`, `chapter_renamed`, `chapter_deleted`, ...) |
 | Lưu trên máy | Token: `expo-secure-store`. Chương offline: mỗi chương một file JSON trong thư mục app |
 

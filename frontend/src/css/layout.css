@@ -195,6 +195,42 @@
   color: var(--c-wordmark-accent);
 }
 
+/* Practice-mode tabs (Khai cuộc / Puzzle): the recessed track and raised
+   chip of .control-tab, at header scale. */
+#header .header-nav {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.125rem;
+  padding: 0.1875rem;
+  margin-bottom: -0.125rem;
+  border-radius: 0.5rem;
+  background: var(--c-recessed);
+}
+
+#header .header-nav-btn {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--c-gray-500);
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+#header .header-nav-btn:hover {
+  color: var(--c-gray-800);
+}
+
+#header .header-nav-btn.is-active {
+  border-color: var(--c-gray-400);
+  background: var(--c-surface);
+  color: var(--c-gray-900);
+}
+
 /* Lighter than the wordmark so the links read as secondary chrome. */
 #header .header-link {
   display: flex;
@@ -253,6 +289,18 @@
   #header .header-link svg {
     width: 0.95em;
     height: 0.95em;
+  }
+
+  /* Room for the practice tabs: the avatar alone says who's signed in, and
+     the GitHub link is the most expendable chrome. */
+  #header .header-username,
+  #header .header-github {
+    display: none;
+  }
+
+  #header .header-nav-btn {
+    padding: 0.1875rem 0.4375rem;
+    font-size: 0.8125rem;
   }
 }
 

@@ -33,7 +33,17 @@ type Config struct {
 	// network. The browser never touches it, so no token is involved.
 	// Empty disables the /explorer route.
 	ExplorerURL string
+	// SyncKey + SyncUsername enable POST /login-key: whoever presents
+	// SyncKey is signed in as SyncUsername (an existing account). Meant
+	// for the owner to link their own web and app without Firebase. Both
+	// empty disables it. Generate the key with `openssl rand -hex 24`.
+	SyncKey      string
+	SyncUsername string
 }
+
+// minSyncKeyLength: SYNC_KEY is a long-lived password for one account,
+// so it has to be long and random to be safe from guessing.
+const minSyncKeyLength = 24
 
 // Load reads .env (if present) and resolves every config value, applying
 // dev-friendly defaults where it's safe to do so. Required values that
@@ -52,6 +62,15 @@ func Load() Config {
 		CookieSecure:     strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
 		HintCookieDomain: strings.TrimSpace(os.Getenv("HINT_COOKIE_DOMAIN")),
 		ExplorerURL:      strings.TrimRight(strings.TrimSpace(os.Getenv("EXPLORER_URL")), "/"),
+		SyncKey:          strings.TrimSpace(os.Getenv("SYNC_KEY")),
+		SyncUsername:     strings.ToLower(strings.TrimSpace(os.Getenv("SYNC_USERNAME"))),
+	}
+
+	if (cfg.SyncKey == "") != (cfg.SyncUsername == "") {
+		log.Fatal("SYNC_KEY and SYNC_USERNAME must be set together")
+	}
+	if cfg.SyncKey != "" && len(cfg.SyncKey) < minSyncKeyLength {
+		log.Fatalf("SYNC_KEY must be at least %d characters (try: openssl rand -hex 24)", minSyncKeyLength)
 	}
 
 	if cfg.FirebaseProjectID == "" {

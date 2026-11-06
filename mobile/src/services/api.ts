@@ -91,7 +91,10 @@ export async function exchangeIdToken(idToken: string, username?: string): Promi
     });
     if (data?.needsUsername) return { kind: 'needsUsername' };
     if (!data?.sessionToken) {
-      throw new ApiError(500, 'Server chưa hỗ trợ đăng nhập từ app (thiếu sessionToken). Hãy deploy backend mới.');
+      throw new ApiError(
+        500,
+        'Server chưa hỗ trợ đăng nhập từ app (thiếu sessionToken). Hãy deploy backend mới.',
+      );
     }
     return { kind: 'ok', token: data.sessionToken, user: data.user, chapters: data.chapters };
   } catch (e) {
@@ -99,6 +102,28 @@ export async function exchangeIdToken(idToken: string, username?: string): Promi
     if (e instanceof ApiError && e.status === 429) throw new ApiError(429, 'Thử quá nhiều lần. Đợi 1 phút.');
     if (e instanceof ApiError && e.status === 400 && /username/.test(e.message)) {
       throw new ApiError(400, 'Tên người dùng chỉ gồm 3–20 ký tự a-z, 0-9, _');
+    }
+    throw e;
+  }
+}
+
+// Owner's sync key (backend SYNC_KEY): signs in as the one account it
+// is bound to, no Firebase involved. Same response shape as /login.
+export async function keyLogin(key: string): Promise<Extract<LoginResult, { kind: 'ok' }>> {
+  try {
+    const data = await api('/login-key', { method: 'POST', body: JSON.stringify({ key, client: 'mobile' }) });
+    return { kind: 'ok', token: data.sessionToken, user: data.user, chapters: data.chapters };
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e;
+    if (e.status === 401) throw new ApiError(401, 'Khoá đồng bộ không đúng.');
+    if (e.status === 429) throw new ApiError(429, 'Thử quá nhiều lần. Đợi 1 phút.');
+    if (e.status === 404) {
+      throw new ApiError(
+        404,
+        /sync account/.test(e.message)
+          ? 'Tài khoản SYNC_USERNAME chưa có trên server.'
+          : 'Server chưa bật khoá đồng bộ (thiếu SYNC_KEY / SYNC_USERNAME trên Render).',
+      );
     }
     throw e;
   }

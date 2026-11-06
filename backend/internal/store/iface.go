@@ -37,4 +37,7 @@ type Repo interface {
 	FetchIncomingCollaborators(ctx context.Context, userID string) ([]domain.CollaboratorView, error)
 
 	CanViewRepertoire(ctx context.Context, ownerID, viewerID string) (bool, error)
+
+	FetchDrillState(ctx context.Context, userID, kind string) (domain.DrillState, error)
+	RecordDrillAttempt(ctx context.Context, userID, kind string, a domain.DrillAttempt) error
 }

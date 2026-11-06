@@ -57,7 +57,23 @@ func RegisterWithLimits(mux *http.ServeMux, db store.Repo, firebaseProjectID str
 	mux.HandleFunc("GET /collaborators/incoming", GetIncomingCollaborators(db))
 	mux.HandleFunc("POST /collaborators", limits.AddCollaborator.HandlerFunc(AddCollaborator(db)))
 	mux.HandleFunc("DELETE /collaborators/{username}", RemoveCollaborator(db))
+
+	mux.HandleFunc("GET /drills/{kind}", GetDrillState(db))
+	mux.HandleFunc("POST /drills/{kind}/attempts", PostDrillAttempt(db))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+}
+
+// RegisterKeyLoginRoute adds POST /login-key (see KeyLogin) when a sync
+// key is configured; with SYNC_KEY unset the route doesn't exist. The
+// real protection is the key's length (config enforces 24+ random
+// chars); the tight per-IP rate limit (burst 5, then 10/min) just keeps
+// casual hammering cheap.
+func RegisterKeyLoginRoute(mux *http.ServeMux, db store.Repo, syncKey, username string) {
+	if syncKey == "" {
+		return
+	}
+	limiter := ratelimit.New(5, 10.0/60.0)
+	mux.HandleFunc("POST /login-key", limiter.HandlerFunc(KeyLogin(db, syncKey, username)))
 }

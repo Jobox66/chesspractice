@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { Modal } from './Modal';
 import { firebaseAuth, googleProvider } from '../../lib/firebase';
-import { applyLoginResponse, exchangeIdToken } from '../../services/auth';
+import { applyLoginResponse, exchangeIdToken, loginWithSyncKey } from '../../services/auth';
 import { AvatarUploadError, deleteAvatar, uploadAvatar } from '../../services/avatar';
 import { useAuthStore } from '../../store/auth';
 import './LoginModal.css';
@@ -17,7 +17,8 @@ import './LoginModal.css';
 const API_URL = import.meta.env.VITE_API_URL;
 
 type CheckState = 'idle' | 'pending' | 'available' | 'taken' | 'invalid';
-type Mode = 'signin' | 'signup' | 'reset';
+// 'key': the owner's sync key (backend SYNC_KEY) instead of an account
+type Mode = 'signin' | 'signup' | 'reset' | 'key';
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 const MIN_PASSWORD = 8;
@@ -61,6 +62,7 @@ export function LoginModal() {
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [syncKey, setSyncKeyInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
@@ -124,6 +126,7 @@ export function LoginModal() {
     setMode('signin');
     setEmail('');
     setPassword('');
+    setSyncKeyInput('');
     setBusy(false);
     setError(null);
     setResetSent(false);
@@ -217,6 +220,21 @@ export function LoginModal() {
     });
   };
 
+  const submitSyncKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const key = syncKey.trim();
+    if (!key) return;
+    return run(async () => {
+      const result = await loginWithSyncKey(key);
+      if (result.kind === 'ok') {
+        applyLoginResponse(result.data);
+        reset();
+      } else if (result.kind === 'error') {
+        setError(result.message);
+      }
+    });
+  };
+
   const submitUsername = (e: React.FormEvent) => {
     e.preventDefault();
     if (checkState !== 'available' || !pendingUser) return;
@@ -272,7 +290,13 @@ export function LoginModal() {
     void deleteAvatar(pendingUser);
   };
 
-  const title = pendingUser ? 'Set up your profile' : mode === 'reset' ? 'Reset password' : 'Welcome';
+  const title = pendingUser
+    ? 'Set up your profile'
+    : mode === 'reset'
+      ? 'Reset password'
+      : mode === 'key'
+        ? 'Sync key'
+        : 'Welcome';
 
   // what the preview shows: the upload if there is one, else Google's photo
   const previewUrl = uploadedPicture || pendingUser?.photoURL || '';
@@ -282,7 +306,7 @@ export function LoginModal() {
     <Modal open={showLogin} onClose={dismiss} title={title} scrimClassName="is-stacked">
       {!pendingUser && (
         <div className="login-body">
-          {mode !== 'reset' && (
+          {(mode === 'signin' || mode === 'signup') && (
             <>
               <div className="login-tabs" role="tablist">
                 <button
@@ -314,48 +338,77 @@ export function LoginModal() {
             </>
           )}
 
-          <form onSubmit={submitEmailForm} className="login-form">
-            <input
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={busy}
-            />
-            {mode !== 'reset' && (
+          {mode === 'key' && (
+            <form onSubmit={submitSyncKey} className="login-form">
               <input
                 type="password"
-                name="password"
-                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                placeholder={mode === 'signup' ? `password (${MIN_PASSWORD}+ characters)` : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={mode === 'signup' ? MIN_PASSWORD : undefined}
+                name="sync-key"
+                autoComplete="current-password"
+                placeholder="sync key"
+                value={syncKey}
+                onChange={(e) => setSyncKeyInput(e.target.value)}
+                required
+                autoFocus
+                disabled={busy}
+              />
+              <p className={`login-message${error ? ' is-error' : ''}`} role="alert">
+                {error}
+              </p>
+              <button type="submit" className="login-submit" disabled={busy || !syncKey.trim()}>
+                Log in
+              </button>
+            </form>
+          )}
+
+          {mode !== 'key' && (
+            <form onSubmit={submitEmailForm} className="login-form">
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={busy}
               />
-            )}
+              {mode !== 'reset' && (
+                <input
+                  type="password"
+                  name="password"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  placeholder={mode === 'signup' ? `password (${MIN_PASSWORD}+ characters)` : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={mode === 'signup' ? MIN_PASSWORD : undefined}
+                  required
+                  disabled={busy}
+                />
+              )}
 
-            <p className={`login-message${error ? ' is-error' : ''}`} role="alert">
-              {error}
-              {!error && resetSent && 'If that address has an account, a reset link is on its way.'}
-            </p>
+              <p className={`login-message${error ? ' is-error' : ''}`} role="alert">
+                {error}
+                {!error && resetSent && 'If that address has an account, a reset link is on its way.'}
+              </p>
 
-            <button type="submit" className="login-submit" disabled={busy}>
-              {mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Send reset link' : 'Log in'}
-            </button>
-          </form>
+              <button type="submit" className="login-submit" disabled={busy}>
+                {mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Send reset link' : 'Log in'}
+              </button>
+            </form>
+          )}
 
           <div className="login-links">
             {mode === 'signin' && (
-              <button type="button" className="login-link" onClick={() => switchMode('reset')}>
-                Forgot password?
-              </button>
+              <>
+                <button type="button" className="login-link" onClick={() => switchMode('reset')}>
+                  Forgot password?
+                </button>
+                <button type="button" className="login-link" onClick={() => switchMode('key')}>
+                  Use sync key
+                </button>
+              </>
             )}
-            {mode === 'reset' && (
+            {(mode === 'reset' || mode === 'key') && (
               <button type="button" className="login-link" onClick={() => switchMode('signin')}>
                 Back to log in
               </button>
@@ -363,6 +416,7 @@ export function LoginModal() {
           </div>
 
           {mode === 'signup' && <p className="login-note">You'll pick a username on the next step.</p>}
+          {mode === 'key' && <p className="login-note">This browser remembers the key until you log out.</p>}
         </div>
       )}
 

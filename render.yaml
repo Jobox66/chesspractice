@@ -28,3 +28,7 @@ services:
         value: "true"
       # Opening-explorer service is not deployed on the free tier (needs a
       # persistent disk); leaving EXPLORER_URL unset disables /explorer.
+      # Optional, set in the dashboard (Environment), not here:
+      #   SYNC_KEY       24+ random chars, the owner's sync key (POST /login-key)
+      #   SYNC_USERNAME  existing account the key signs in as
+      # Both or neither; unset = /login-key disabled.

@@ -65,7 +65,6 @@ import './css/layout.css';
 import './css/chesspractice.css';
 import { Debug } from './components/Debug';
 import { useWebsocket } from './hooks/useWebsocket';
-import { useStartup } from './hooks/useStartup';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useHotkeyStore, comboParts } from './store/hotkeys';
 import { firstMove, lastMove, nextMove, prevMove } from './util/navigation';
@@ -141,9 +140,9 @@ export const Chesspractice = () => {
   const connectedUsers = useTrainerStore((s) => s.connectedUsers);
   const authUsername = useAuthStore((s) => s.user?.username);
 
-  // Bootstraps /repertoire, owns the WebSocket, and re-fetches on
-  // repertoireOwner changes. Replaces the previous /me + URL-param flow.
-  useStartup();
+  // Owns the WebSocket and re-fetches on repertoireOwner changes. The
+  // /repertoire bootstrap (useStartup) runs once in App so it survives
+  // switching tabs.
   useWebsocket();
 
   const [collaboratorsOpen, setCollaboratorsOpen] = useState(false);

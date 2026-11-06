@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check-library": "node --experimental-strip-types scripts/check-library.mjs"
+    "check-library": "node --experimental-strip-types scripts/check-library.mjs",
+    "build-puzzles": "node scripts/build-puzzles.mjs"
   },
   "engines": {
     "pnpm": "9999.9999.9999",

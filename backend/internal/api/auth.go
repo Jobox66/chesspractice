@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -117,35 +119,84 @@ func Login(db store.Repo, firebaseProjectID string) http.HandlerFunc {
 			return
 		}
 
-		sess, err := auth.CreateSession(r.Context(), db, user.TokenID)
-		if err != nil {
-			log.Println("failed to create session:", err)
-			w.WriteHeader(http.StatusInternalServerError)
+		completeLogin(w, r, db, user, body.Client)
+	}
+}
+
+// completeLogin is the shared tail of every login flow: open a session
+// for user, set the browser cookies, and answer with GET /repertoire's
+// shape so the client can skip a follow-up round trip. Client "mobile"
+// also gets the session id back as sessionToken (see Login).
+func completeLogin(w http.ResponseWriter, r *http.Request, db store.Repo, user domain.User, client string) {
+	sess, err := auth.CreateSession(r.Context(), db, user.TokenID)
+	if err != nil {
+		log.Println("failed to create session:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	auth.SetSessionCookies(w, sess)
+
+	chapters, err := db.FetchChaptersByOwner(r.Context(), user.TokenID)
+	if err != nil {
+		log.Println("failed to fetch chapters:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	resp := struct {
+		User         domain.User                  `json:"user"`
+		Chapters     []domain.ChapterTreeResponse `json:"chapters"`
+		SessionToken string                       `json:"sessionToken,omitempty"`
+	}{User: user, Chapters: chapters}
+	if client == "mobile" {
+		resp.SessionToken = sess.SessionID
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// KeyLogin signs in as one fixed account (username) with a shared
+// secret instead of Firebase: a personal "sync key" the owner pastes
+// into the web and the app once, so their devices share a repertoire
+// without the email/Google flow. The account must already exist (it is
+// looked up, never created). Same response as Login.
+func KeyLogin(db store.Repo, syncKey, username string) http.HandlerFunc {
+	// compare digests so the comparison takes the same time whatever the
+	// length of the submitted key
+	want := sha256.Sum256([]byte(syncKey))
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			Key    string `json:"key"`
+			Client string `json:"client"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Key == "" {
+			http.Error(w, "missing key", http.StatusBadRequest)
+			return
+		}
+		got := sha256.Sum256([]byte(body.Key))
+		if subtle.ConstantTimeCompare(got[:], want[:]) != 1 {
+			http.Error(w, "invalid key", http.StatusUnauthorized)
 			return
 		}
 
-		auth.SetSessionCookies(w, sess)
-
-		// mirror GET /repertoire's shape so the client can skip a follow-up
-		// round trip: one request hydrates user + chapters + opens session.
-		chapters, err := db.FetchChaptersByOwner(r.Context(), user.TokenID)
+		user, err := db.FetchUserByUsername(r.Context(), username)
 		if err != nil {
-			log.Println("failed to fetch chapters:", err)
+			log.Println("sync key login: user lookup failed:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		resp := struct {
-			User         domain.User                  `json:"user"`
-			Chapters     []domain.ChapterTreeResponse `json:"chapters"`
-			SessionToken string                       `json:"sessionToken,omitempty"`
-		}{User: user, Chapters: chapters}
-		if body.Client == "mobile" {
-			resp.SessionToken = sess.SessionID
+		if user == nil {
+			log.Printf("sync key login: SYNC_USERNAME %q has no account; sign in once with Google/email to create it", username)
+			http.Error(w, "sync account not found", http.StatusNotFound)
+			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		json.NewEncoder(w).Encode(resp)
+		completeLogin(w, r, db, *user, body.Client)
 	}
 }
 

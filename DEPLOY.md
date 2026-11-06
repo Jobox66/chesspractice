@@ -63,6 +63,15 @@ git pull
    | `ALLOWED_ORIGINS`     | `FRONTEND`, ví dụ `https://chesspractice.vercel.app` (không có `/` ở cuối) |
 
    `ALLOWED_ORIGINS` có thể điền theo tên project Vercel bạn định đặt; nếu sai thì sửa lại ở bước 6.
+
+   Tuỳ chọn, thêm sau ở service → **Environment**: khoá đồng bộ cho riêng chủ app. Ai nhập đúng khoá này trên web
+   (Log in → **Use sync key**) hoặc trên app (Tài khoản → **Khoá đồng bộ**) sẽ vào thẳng tài khoản `SYNC_USERNAME`,
+   không cần email/Google. Phải đặt cả 2 biến, hoặc không đặt biến nào.
+
+   | Biến            | Giá trị                                                                                        |
+   | --------------- | ---------------------------------------------------------------------------------------------- |
+   | `SYNC_KEY`      | Chuỗi ngẫu nhiên từ 24 ký tự trở lên, ví dụ chạy `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"` |
+   | `SYNC_USERNAME` | username của tài khoản đã có (tạo trước bằng Google/email trên web)                         |
 4. Mở service `chesspractice-backend` → tab **Logs**, chờ build xong (khoảng 3–5 phút), tới khi thấy
    `server ready on :10000` (cổng do Render tự cấp; số cổng có thể khác).
 5. Copy địa chỉ ở đầu trang service (dạng `https://chesspractice-backend.onrender.com`; nếu tên đã có người dùng,

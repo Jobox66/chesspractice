@@ -25,6 +25,7 @@ type fakeStore struct {
 	sessions        map[string]store.Session
 	chapters        map[string][]domain.ChapterTreeResponse
 	collaborators   map[collabKey]string // value is the permission ('edit' | 'train')
+	drills          map[drillKey]*domain.DrillState
 
 	// errOn forces a method to return the given error on its next
 	// call. Set via withErr; cleared after the call fires.
@@ -33,6 +34,8 @@ type fakeStore struct {
 
 type collabKey struct{ owner, collaborator string }
 
+type drillKey struct{ user, kind string }
+
 func newFakeStore() *fakeStore {
 	return &fakeStore{
 		usersByToken:    map[string]domain.User{},
@@ -40,6 +43,7 @@ func newFakeStore() *fakeStore {
 		sessions:        map[string]store.Session{},
 		chapters:        map[string][]domain.ChapterTreeResponse{},
 		collaborators:   map[collabKey]string{},
+		drills:          map[drillKey]*domain.DrillState{},
 		errOn:           map[string]error{},
 	}
 }
@@ -225,6 +229,63 @@ func (f *fakeStore) CanViewRepertoire(_ context.Context, ownerID, viewerID strin
 	}
 	_, ok := f.collaborators[collabKey{ownerID, viewerID}]
 	return ok, nil
+}
+
+func (f *fakeStore) FetchDrillState(_ context.Context, userID, kind string) (domain.DrillState, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.takeErr("FetchDrillState"); err != nil {
+		return domain.DrillState{}, err
+	}
+	if st, ok := f.drills[drillKey{userID, kind}]; ok {
+		return *st, nil
+	}
+	return domain.DrillState{Progress: []domain.DrillProgress{}, Attempts: []domain.DrillAttemptLog{}}, nil
+}
+
+func (f *fakeStore) RecordDrillAttempt(_ context.Context, userID, kind string, a domain.DrillAttempt) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.takeErr("RecordDrillAttempt"); err != nil {
+		return err
+	}
+	k := drillKey{userID, kind}
+	st, ok := f.drills[k]
+	if !ok {
+		st = &domain.DrillState{Progress: []domain.DrillProgress{}, Attempts: []domain.DrillAttemptLog{}}
+		f.drills[k] = st
+	}
+	var ratingAfter *float64
+	if a.Rating != nil {
+		r := *a.Rating
+		st.Rating = &r
+		ratingAfter = &r.Rating
+	}
+	now := time.Now()
+	idx := -1
+	for i, p := range st.Progress {
+		if p.ItemID == a.ItemID {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		st.Progress = append(st.Progress, domain.DrillProgress{ItemID: a.ItemID})
+		idx = len(st.Progress) - 1
+	}
+	p := &st.Progress[idx]
+	p.Attempts++
+	if a.Success {
+		p.Successes++
+	}
+	p.LastSuccess = a.Success
+	if len(a.Card) > 0 && string(a.Card) != "null" {
+		p.Card = a.Card
+	}
+	p.UpdatedAt = now
+	st.Attempts = append(st.Attempts, domain.DrillAttemptLog{
+		ItemID: a.ItemID, Success: a.Success, RatingAfter: ratingAfter, DurationMs: a.DurationMs, At: now,
+	})
+	return nil
 }
 
 // Compile-time assertion: fakeStore satisfies store.Repo. If a method

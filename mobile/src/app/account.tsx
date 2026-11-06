@@ -8,8 +8,9 @@ import { Banner, Button, Card, Segmented } from '../components/ui';
 import { theme } from '../components/theme';
 
 export default function Account() {
-  const { user, connected, pending, logout, signedIn } = useApp();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const { user, connected, pending, logout, signedIn, signInWithKey } = useApp();
+  const [mode, setMode] = useState<'key' | 'login' | 'signup'>('key');
+  const [syncKey, setSyncKey] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -34,7 +35,11 @@ export default function Account() {
           onPress={() =>
             Alert.alert(
               'Đăng xuất?',
-              pending ? `Còn ${pending} thay đổi chưa gửi lên server, đăng xuất sẽ mất chúng.` : 'App sẽ quay về chế độ offline.',
+              `${
+                pending
+                  ? `Còn ${pending} thay đổi chưa gửi lên server, đăng xuất sẽ mất chúng.`
+                  : 'App sẽ quay về chế độ offline.'
+              } Khoá đồng bộ (nếu có) cũng bị xoá khỏi máy, lần sau phải nhập lại.`,
               [
                 { text: 'Huỷ', style: 'cancel' },
                 {
@@ -71,11 +76,17 @@ export default function Account() {
     setError(null);
     setBusy(true);
     try {
-      if (pendingToken) {
+      if (mode === 'key' && !pendingToken) {
+        await signInWithKey(syncKey.trim());
+        router.back();
+      } else if (pendingToken) {
         await finish(pendingToken, username.trim().toLowerCase());
       } else {
         const addr = email.trim();
-        const token = mode === 'login' ? await signInWithPassword(addr, password) : await signUpWithPassword(addr, password);
+        const token =
+          mode === 'login'
+            ? await signInWithPassword(addr, password)
+            : await signUpWithPassword(addr, password);
         await finish(token);
       }
     } catch (e) {
@@ -100,8 +111,8 @@ export default function Account() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
         <Text style={styles.muted}>
-          Đăng nhập cùng tài khoản với bản web để luyện chung một repertoire. Không đăng nhập thì app vẫn dùng được ở chế độ
-          offline.
+          Đăng nhập cùng tài khoản với bản web để luyện chung một repertoire. Không đăng nhập thì app vẫn dùng
+          được ở chế độ offline.
         </Text>
 
         {pendingToken ? (
@@ -117,52 +128,97 @@ export default function Account() {
               placeholder="ten_cua_ban"
               maxLength={20}
             />
-            <Button title="Tạo tài khoản" busy={busy} disabled={!/^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase())} onPress={() => void submit()} />
+            <Button
+              title="Tạo tài khoản"
+              busy={busy}
+              disabled={!/^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase())}
+              onPress={() => void submit()}
+            />
           </Card>
         ) : (
           <Card style={{ gap: 10 }}>
             <Segmented
               value={mode}
-              onChange={setMode}
+              onChange={(m) => {
+                setMode(m);
+                setError(null);
+              }}
               options={[
-                { value: 'login', label: 'Đăng nhập' },
-                { value: 'signup', label: 'Tạo tài khoản' },
+                { value: 'key', label: 'Khoá đồng bộ' },
+                { value: 'login', label: 'Email' },
+                { value: 'signup', label: 'Tạo TK' },
               ]}
             />
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email"
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              style={styles.input}
-            />
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Mật khẩu"
-              secureTextEntry
-              autoComplete="password"
-              style={styles.input}
-              onSubmitEditing={() => void submit()}
-            />
-            <Button
-              title={mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-              busy={busy}
-              disabled={!email.trim() || !password}
-              onPress={() => void submit()}
-            />
-            {mode === 'login' && <Button kind="ghost" small title="Quên mật khẩu / đặt mật khẩu" onPress={() => void forgot()} />}
+            {mode === 'key' ? (
+              <>
+                <TextInput
+                  value={syncKey}
+                  onChangeText={setSyncKey}
+                  placeholder="Dán khoá đồng bộ"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.input}
+                  onSubmitEditing={() => void submit()}
+                />
+                <Button
+                  title="Đăng nhập"
+                  busy={busy}
+                  disabled={!syncKey.trim()}
+                  onPress={() => void submit()}
+                />
+                <Text style={styles.note}>
+                  Khoá là giá trị SYNC_KEY đặt trên Render. Chỉ nhập 1 lần: app nhớ khoá cho tới khi bạn đăng
+                  xuất.
+                </Text>
+              </>
+            ) : (
+              <>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  style={styles.input}
+                />
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Mật khẩu"
+                  secureTextEntry
+                  autoComplete="password"
+                  style={styles.input}
+                  onSubmitEditing={() => void submit()}
+                />
+                <Button
+                  title={mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
+                  busy={busy}
+                  disabled={!email.trim() || !password}
+                  onPress={() => void submit()}
+                />
+                {mode === 'login' && (
+                  <Button
+                    kind="ghost"
+                    small
+                    title="Quên mật khẩu / đặt mật khẩu"
+                    onPress={() => void forgot()}
+                  />
+                )}
+              </>
+            )}
           </Card>
         )}
 
         {error && <Banner text={error} color={theme.danger} />}
 
-        <Text style={styles.note}>
-          Tài khoản tạo bằng Google trên web: bấm “Quên mật khẩu / đặt mật khẩu” với email Google đó để đặt mật khẩu, rồi đăng
-          nhập bằng email + mật khẩu.
-        </Text>
+        {mode !== 'key' && (
+          <Text style={styles.note}>
+            Tài khoản tạo bằng Google trên web: bấm “Quên mật khẩu / đặt mật khẩu” với email Google đó để đặt
+            mật khẩu, rồi đăng nhập bằng email + mật khẩu.
+          </Text>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

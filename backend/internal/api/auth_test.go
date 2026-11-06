@@ -372,3 +372,108 @@ func TestRequireSession_RejectsUnknownBearer(t *testing.T) {
 		t.Fatalf("status = %d, want 401", rr.Code)
 	}
 }
+
+const testSyncKey = "0123456789abcdef0123456789abcdef"
+
+func TestKeyLogin_SignsInAsSyncUser(t *testing.T) {
+	fs := newFakeStore()
+	seedUser(t, fs, domain.User{TokenID: "owner-sub", Username: "owner"})
+
+	// browser: cookie session, no token in the body
+	rr := httptest.NewRecorder()
+	KeyLogin(fs, testSyncKey, "owner")(rr, newJSONRequest("POST", "/login-key", `{"key":"`+testSyncKey+`"}`))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		User struct {
+			Username string `json:"username"`
+		} `json:"user"`
+		SessionToken string `json:"sessionToken"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.User.Username != "owner" {
+		t.Fatalf("username = %q, want owner", body.User.Username)
+	}
+	if body.SessionToken != "" {
+		t.Fatal("browser key login should not return sessionToken")
+	}
+	c := findCookie(rr, auth.SessionCookieName)
+	if c == nil || c.Value == "" {
+		t.Fatal("key login should set the session cookie")
+	}
+	if sess := fs.sessions[c.Value]; sess.UserID != "owner-sub" {
+		t.Fatalf("session user = %q, want owner-sub", sess.UserID)
+	}
+
+	// app: same, plus the bearer token
+	rr = httptest.NewRecorder()
+	KeyLogin(fs, testSyncKey, "owner")(rr, newJSONRequest("POST", "/login-key", `{"key":"`+testSyncKey+`","client":"mobile"}`))
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if _, ok := fs.sessions[body.SessionToken]; body.SessionToken == "" || !ok {
+		t.Fatal("mobile key login should return a stored sessionToken")
+	}
+}
+
+func TestKeyLogin_RejectsWrongKey(t *testing.T) {
+	fs := newFakeStore()
+	seedUser(t, fs, domain.User{TokenID: "owner-sub", Username: "owner"})
+	before := len(fs.sessions)
+
+	for _, key := range []string{"wrong", testSyncKey + "x", testSyncKey[:len(testSyncKey)-1]} {
+		rr := httptest.NewRecorder()
+		KeyLogin(fs, testSyncKey, "owner")(rr, newJSONRequest("POST", "/login-key", `{"key":"`+key+`"}`))
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("key %q: status = %d, want 401", key, rr.Code)
+		}
+		if findCookie(rr, auth.SessionCookieName) != nil {
+			t.Fatalf("key %q: wrong key must not set a cookie", key)
+		}
+	}
+	if len(fs.sessions) != before {
+		t.Fatal("wrong key must not create a session")
+	}
+
+	rr := httptest.NewRecorder()
+	KeyLogin(fs, testSyncKey, "owner")(rr, newJSONRequest("POST", "/login-key", `{}`))
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("empty key: status = %d, want 400", rr.Code)
+	}
+}
+
+func TestKeyLogin_MissingAccount(t *testing.T) {
+	fs := newFakeStore()
+	rr := httptest.NewRecorder()
+	KeyLogin(fs, testSyncKey, "nobody")(rr, newJSONRequest("POST", "/login-key", `{"key":"`+testSyncKey+`"}`))
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rr.Code)
+	}
+	if len(fs.usersByToken) != 0 {
+		t.Fatal("key login must never create an account")
+	}
+}
+
+func TestRegisterKeyLoginRoute_DisabledWithoutKey(t *testing.T) {
+	fs := newFakeStore()
+	seedUser(t, fs, domain.User{TokenID: "owner-sub", Username: "owner"})
+
+	mux := http.NewServeMux()
+	RegisterKeyLoginRoute(mux, fs, "", "owner")
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, newJSONRequest("POST", "/login-key", `{"key":""}`))
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("unset SYNC_KEY: status = %d, want 404", rr.Code)
+	}
+
+	mux = http.NewServeMux()
+	RegisterKeyLoginRoute(mux, fs, testSyncKey, "owner")
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, newJSONRequest("POST", "/login-key", `{"key":"`+testSyncKey+`"}`))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("configured: status = %d, want 200", rr.Code)
+	}
+}

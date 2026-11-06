@@ -3,6 +3,12 @@ import { LogIn, LogOut, Moon, Sun, User } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { useThemeStore } from '../store/theme';
 import { useTrainerStore, type Peer } from '../store/state';
+import { navigate, useRoute, type Page } from '../util/route';
+
+const PAGES: { page: Page; label: string }[] = [
+  { page: 'openings', label: 'Khai cuộc' },
+  { page: 'puzzles', label: 'Puzzle' },
+];
 
 interface Props {
   // Other users currently connected to the same repertoire. Only meaningful
@@ -21,7 +27,7 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
   const openLogin = useAuthStore((s) => s.openLogin);
   const showLogin = useAuthStore((s) => s.showLogin);
 
-  const setConnectedUsers = useTrainerStore().setConnectedUsers;
+  const page = useRoute((s) => s.page);
   const peers = connectedUsers?.filter((u) => u.username !== authUser?.username) ?? [];
   const showSignIn = !showLogin;
 
@@ -31,6 +37,22 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
         <span>chess</span>
         <span className="accent">practice</span>
       </div>
+
+      {/* Which practice mode: same recessed track + raised chip as the
+          board's Edit/Learn/Recall control. */}
+      <nav className="header-nav" aria-label="Chế độ luyện">
+        {PAGES.map(({ page: p, label }) => (
+          <button
+            key={p}
+            type="button"
+            className={`header-nav-btn ${page === p ? 'is-active' : ''}`}
+            aria-current={page === p ? 'page' : undefined}
+            onClick={() => navigate(p)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
 
       {/* Identity sits next to the wordmark; the links are pushed right. Who
           you are and the control that changes it live in one recessed track,
@@ -129,7 +151,7 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
           target="_blank"
           rel="noopener noreferrer"
           title="View on GitHub"
-          className="header-link"
+          className="header-link header-github"
         >
           <span>view github</span>
           <SiGithub />

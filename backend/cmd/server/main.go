@@ -32,6 +32,9 @@ func main() {
 	// Opening-explorer proxy: browser -> here (cookie auth) -> explorer
 	// service (bearer token). Disabled if EXPLORER_URL/token are unset.
 	api.RegisterExplorerRoute(httpMux, db, cfg.ExplorerURL)
+	// Owner's "sync key" login (web + app without Firebase). Disabled
+	// unless SYNC_KEY/SYNC_USERNAME are set.
+	api.RegisterKeyLoginRoute(httpMux, db, cfg.SyncKey, cfg.SyncUsername)
 
 	// rootMux dispatches WS upgrades directly (long-lived, no timeout)
 	// and everything else through the timeout wrapper.

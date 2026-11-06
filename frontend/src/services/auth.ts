@@ -2,6 +2,7 @@ import { useAuthStore } from '../store/auth';
 import { useTrainerStore } from '../store/state';
 import { parseChapters } from '../util/chapters';
 import { ensureServerAwake } from './serverWake';
+import { getSyncKey, setSyncKey } from '../lib/syncKey';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,6 +20,50 @@ export function applyLoginResponse(data: any) {
   // triggers websocket hook
   if (data.user?.username) trainer.setRepertoireAuthor(data.user.username);
   auth.closeLogin();
+}
+
+// Signs in with the owner's sync key (POST /login-key). On success the
+// key is remembered in this browser (see lib/syncKey); a key the server
+// rejects is forgotten so startup doesn't keep retrying it.
+export async function loginWithSyncKey(key: string): Promise<ExchangeResult> {
+  await ensureServerAwake();
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/login-key`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    });
+  } catch (err) {
+    console.error('sync key login request failed', err);
+    return { kind: 'error', status: 0, message: 'Could not reach the server. Try again.' };
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    let message = 'Login failed. Try again.';
+    if (res.status === 401) message = 'Wrong sync key.';
+    else if (res.status === 429) message = 'Too many attempts. Try again in a minute.';
+    else if (res.status === 404)
+      message = text.includes('sync account')
+        ? 'The sync account (SYNC_USERNAME) does not exist on the server.'
+        : 'Sync key login is not enabled on the server (set SYNC_KEY and SYNC_USERNAME).';
+    if (res.status === 401 || res.status === 404) setSyncKey(null);
+    return { kind: 'error', status: res.status, message };
+  }
+  setSyncKey(key);
+  return { kind: 'ok', data: await res.json() };
+}
+
+// Startup helper: if this browser remembers a sync key, sign in with it.
+// Returns whether that worked (the response is already applied).
+export async function tryStoredSyncKey(): Promise<boolean> {
+  const key = getSyncKey();
+  if (!key) return false;
+  const result = await loginWithSyncKey(key);
+  if (result.kind !== 'ok') return false;
+  applyLoginResponse(result.data);
+  return true;
 }
 
 export type ExchangeResult =
