@@ -12,6 +12,7 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
+  height: 100dvh;
 }
 
 .app-root {
@@ -231,6 +232,28 @@
   color: var(--c-gray-900);
 }
 
+/* Below the two-column layout (same 768px breakpoint as the grid), the
+   practice tabs get a full-width row of their own under the wordmark, so
+   adding a mode never squeezes the identity and links. A viewport query,
+   not the header-bar container query: #header itself has to wrap, and an
+   element can't query the container it establishes. */
+@media (max-width: 767.98px) {
+  #header {
+    flex-wrap: wrap;
+    row-gap: 0.375rem;
+  }
+
+  #header .header-nav {
+    order: 10;
+    flex-basis: 100%;
+    margin-bottom: 0.125rem;
+  }
+
+  #header .header-nav-btn {
+    flex: 1;
+  }
+}
+
 /* Lighter than the wordmark so the links read as secondary chrome. */
 #header .header-link {
   display: flex;
@@ -291,26 +314,18 @@
     height: 0.95em;
   }
 
-  /* Room for the practice tabs: the avatar alone says who's signed in, and
-     the GitHub link is the most expendable chrome. */
-  #header .header-username,
-  #header .header-github {
-    display: none;
-  }
+}
 
-  #header .header-nav {
-    gap: 0;
-  }
-
+/* Phones (360–440px): tighten the tabs and the sign-in label a notch more,
+   or the theme toggle at the far right gets clipped off the screen. */
+@container header-bar (max-width: 440px) {
   #header .header-nav-btn {
-    padding: 0.1875rem 0.3125rem;
-    font-size: 0.8125rem;
+    padding: 0.1875rem 0.25rem;
+    font-size: 0.75rem;
   }
 
-  /* The sign-in label stays, but at body size rather than wordmark size,
-     so it fits beside the tabs. */
   #header .header-signin {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 }
 
@@ -349,6 +364,12 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* The board is square, so its width is also its height: cap it by the
+     viewport height too, or a wide-but-short screen (phone in landscape)
+     pushes the Learn/Recall controls below the fold. ~9rem = header +
+     progress bar + controls; 16rem keeps it usable on tiny heights. */
+  width: min(100%, max(16rem, calc(100dvh - 9rem)));
+  justify-self: center;
 }
 .area-usertip {
   grid-area: usertip;
@@ -705,9 +726,17 @@
     padding: 0 2.5rem;
   }
 
-  /* TODO define shrinking strategy w/ respect to chessboard */
+  /* The board column is sized by the board itself (`auto`), and the board
+     is the smaller of:
+       - its old share of the width: 1.15 of 3.15 fr, after the 2 x 2.5rem
+         page padding and 2 x 0.75rem gaps (= 6.5rem), and
+       - what the viewport height leaves after header, progress bar,
+         controls, bottom margin and the tip card below (18rem).
+     On 16:9 the width wins, same as before. On ultrawide (21:9, 32:9) the
+     height wins, so the Learn/Recall controls stay on screen, and the
+     side columns take the spare width. */
   .app-main {
-    grid-template-columns: minmax(200px, 1fr) 1.15fr 1fr;
+    grid-template-columns: minmax(200px, 1fr) auto 1fr;
     grid-template-rows: 1fr 1fr;
     /* pgn lives only in row 1, so it caps at the board's height; the
        column-3 cell in row 2 is intentionally empty (`.`) and shows the
@@ -716,13 +745,16 @@
       'sidebar board   pgn'
       'sidebar usertip .  ';
     padding: 0 2.5rem 1rem;
-    /* shrink the grid box itself so app-root's background is visible below.
-       padding-bottom won't work here: the chessground is aspect-ratio:1 and
-       forces the grid to overflow, so anything carved out of the grid (a
-       spacer row or padding) gets clipped by overflow:hidden first. */
+    /* shrink the grid box itself so app-root's background is visible below */
     margin-bottom: 3rem;
     gap: 0.75rem;
-    overflow: hidden;
+    overflow-x: hidden;
+    /* last resort for very short windows: scroll instead of clipping */
+    overflow-y: auto;
+  }
+
+  .area-board {
+    width: min(calc((100vw - 6.5rem) * 1.15 / 3.15), max(16rem, calc(100dvh - 18rem)));
   }
 
   /* Sidebar takes the full left column; repertoire flexes to fill,

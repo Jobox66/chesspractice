@@ -36,7 +36,11 @@
 html,
 body {
   margin: 0;
+  /* dvh = the visible height. On phones 100vh is taller than the screen
+     (it ignores the address bar), which pushed the page bottom off-screen.
+     100vh stays as the fallback for browsers without dvh. */
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden; /* Prevents scrolling on the whole page */
   font-family: var(--font-sans);

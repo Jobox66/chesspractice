@@ -41,6 +41,9 @@
 .puzzle-board-card {
   position: relative;
   margin-inline: auto;
+  /* square board: cap by height too, so a phone in landscape still shows
+     the controls under it (desktop tightens this below) */
+  max-width: max(16rem, calc(100dvh - 8rem));
 }
 
 @media (min-width: 768px) and (max-width: 1023.98px) {
