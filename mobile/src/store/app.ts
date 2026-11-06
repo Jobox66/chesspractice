@@ -116,7 +116,7 @@ export const useApp = create<AppState>((set, get) => {
         // be reached: stay signed in, pull-to-refresh retries
         if (await loadSyncKey()) return;
         await get().logout();
-        set({ error: 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.' });
+        set({ error: 'Your session has expired. Please log in again.' });
         return;
       }
       set({ error: e instanceof Error ? e.message : String(e) });
@@ -256,9 +256,9 @@ export const useApp = create<AppState>((set, get) => {
         });
       } catch (e) {
         let msg = e instanceof Error ? e.message : String(e);
-        if (e instanceof ApiError && e.status === 413) msg = 'Chương vượt giới hạn số nước đi trên server.';
+        if (e instanceof ApiError && e.status === 413) msg = 'The chapter is over the server move limit.';
         if (e instanceof ApiError && e.status === 409)
-          msg = 'Repertoire đã đạt giới hạn số chương trên server.';
+          msg = 'The repertoire is at the server chapter limit.';
         await fetchServer();
         throw new Error(msg);
       }

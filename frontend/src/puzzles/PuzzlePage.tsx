@@ -66,9 +66,9 @@ export default function PuzzlePage() {
       {setStatus === 'missing' ? (
         <MissingSet />
       ) : setStatus === 'error' ? (
-        <CenterNote icon={<TriangleAlertIcon />} title="Không tải được bộ puzzle" text="Kiểm tra kết nối rồi tải lại trang." />
+        <CenterNote icon={<TriangleAlertIcon />} title="Couldn't load the puzzles" text="Check your connection and reload the page." />
       ) : setStatus !== 'ready' || progressStatus !== 'ready' ? (
-        <CenterNote icon={<Loader2Icon className="puzzle-spin" />} title="Đang tải puzzle…" text="" />
+        <CenterNote icon={<Loader2Icon className="puzzle-spin" />} title="Loading puzzles…" text="" />
       ) : (
         <div className="puzzle-main">
           <div className="puzzle-area-board">
@@ -214,13 +214,13 @@ function PuzzleTip() {
       return (
         <Tip
           icon={<CheckCircle2Icon />}
-          title="Không có bài nào cần ôn lúc này"
+          title="Nothing to review right now"
           description={
             waiting.length
-              ? `${waiting.length} bài từng sai đang chờ đến hạn ôn, sớm nhất ${new Date(waiting[0]).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`
-              : 'Bài giải sai sẽ quay lại đây theo lịch ôn tập.'
+              ? `${waiting.length} missed puzzle${waiting.length === 1 ? '' : 's'} scheduled, the next one due ${new Date(waiting[0]).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`
+              : 'Puzzles you miss come back here on a review schedule.'
           }
-          actions={[{ label: 'LÀM BÀI MỚI', onClick: () => updateSettings({ mode: 'rated' }) }]}
+          actions={[{ label: 'NEW PUZZLES', onClick: () => updateSettings({ mode: 'rated' }) }]}
         />
       );
     }
@@ -228,39 +228,39 @@ function PuzzleTip() {
       return (
         <Tip
           icon={<CheckCircle2Icon />}
-          title="Đã làm hết bài phù hợp"
-          description={settings.theme ? `Hết bài chủ đề "${themeLabel(settings.theme)}".` : 'Bạn đã làm hết bộ puzzle hiện có.'}
-          actions={settings.theme ? [{ label: 'BỎ LỌC CHỦ ĐỀ', onClick: () => updateSettings({ theme: null }) }] : []}
+          title="No puzzles left"
+          description={settings.theme ? `You've done every "${themeLabel(settings.theme)}" puzzle.` : "You've done every puzzle in the set."}
+          actions={settings.theme ? [{ label: 'CLEAR THEME', onClick: () => updateSettings({ theme: null }) }] : []}
         />
       );
     return null;
   }
 
-  const side = solverColor(run) === 'white' ? 'Trắng' : 'Đen';
+  const side = solverColor(run) === 'white' ? 'White' : 'Black';
   const lichess = { label: <>LICHESS <ExternalLinkIcon size={12} /></>, href: `https://lichess.org/training/${run.puzzle.id}` };
   const meta = (
     <>
-      Puzzle {run.puzzle.rating} · {run.puzzle.themes.filter((t) => SKILL_THEMES.has(t)).map(themeLabel).join(', ') || 'chiến thuật'}
+      Puzzle {run.puzzle.rating} · {run.puzzle.themes.filter((t) => SKILL_THEMES.has(t)).map(themeLabel).join(', ') || 'tactics'}
     </>
   );
 
   switch (run.phase) {
     case 'intro':
     case 'opponent':
-      return <Tip icon={<PuzzleIcon />} title={run.phase === 'intro' ? 'Đối thủ đang đi…' : 'Đúng rồi!'} description={`Bạn cầm quân ${side}.`} />;
+      return <Tip icon={<PuzzleIcon />} title={run.phase === 'intro' ? 'Opponent to move…' : 'Correct!'} description={`You play ${side}.`} />;
     case 'play':
       return (
         <Tip
           icon={run.failed ? <XIcon className="tip-cross" /> : <PuzzleIcon />}
-          title={run.failed ? 'Thử tiếp hoặc xem lời giải' : run.step > 1 ? 'Tiếp tục…' : 'Đến lượt bạn'}
+          title={run.failed ? 'Keep trying or view the solution' : run.step > 1 ? 'Keep going…' : 'Your turn'}
           description={
             run.failed
-              ? 'Bài đã tính là chưa giải được, nhưng bạn vẫn có thể tự tìm ra.'
-              : `Tìm nước tốt nhất cho ${side}.${run.kind === 'review' ? ' (Ôn lại bài từng sai)' : ''}`
+              ? 'This counts as a miss, but you can still find it yourself.'
+              : `Find the best move for ${side}.${run.kind === 'review' ? ' (Review of a missed puzzle)' : ''}`
           }
           actions={[
-            { label: <><LightbulbIcon size={13} /> GỢI Ý</>, onClick: hint, disabled: !!run.hint },
-            { label: <><EyeIcon size={13} /> XEM LỜI GIẢI</>, onClick: showSolution },
+            { label: <><LightbulbIcon size={13} /> HINT</>, onClick: hint, disabled: !!run.hint },
+            { label: <><EyeIcon size={13} /> SOLUTION</>, onClick: showSolution },
           ]}
         />
       );
@@ -268,20 +268,20 @@ function PuzzleTip() {
       return (
         <Tip
           icon={<XIcon className="tip-cross" />}
-          title={`${run.wrongSan} chưa đúng`}
-          description="Bài này đã tính là chưa giải được. Thử lại nước khác."
+          title={`${run.wrongSan} is not it`}
+          description="This counts as a miss. Try another move."
         />
       );
     case 'solution':
-      return <Tip icon={<EyeIcon />} title="Lời giải" description="Xem các nước đúng…" />;
+      return <Tip icon={<EyeIcon />} title="Solution" description="Playing the correct moves…" />;
     case 'done': {
       if (run.kind === 'practice')
         return (
           <Tip
             icon={run.failed ? <EyeIcon /> : <CheckCircle2Icon />}
-            title={run.failed ? 'Đã xem lời giải' : 'Giải lại đúng!'}
-            description={<>Lần làm lại không tính điểm. {meta}</>}
-            actions={[{ label: 'BÀI TIẾP', onClick: next }, { label: 'LÀM LẠI', onClick: retry }, lichess]}
+            title={run.failed ? 'Solution shown' : 'Solved again!'}
+            description={<>Replays are not rated. {meta}</>}
+            actions={[{ label: 'NEXT', onClick: next }, { label: 'RETRY', onClick: retry }, lichess]}
           />
         );
       const success = !run.failed;
@@ -290,19 +290,19 @@ function PuzzleTip() {
           icon={success ? <CheckCircle2Icon className="puzzle-ok" /> : <XIcon className="tip-cross" />}
           title={
             <>
-              {success ? 'Chính xác!' : run.solved ? 'Giải xong, nhưng tính là sai' : 'Chưa giải được'}{' '}
+              {success ? 'Correct!' : run.solved ? 'Solved, but counted as a miss' : 'Not solved'}{' '}
               <RatingDelta delta={run.ratingDelta} />
             </>
           }
           description={
             <>
               {meta}
-              {!success && <><br />Bài này sẽ quay lại trong mục “Ôn bài sai”.</>}
+              {!success && <><br />It will come back in “Review misses”.</>}
             </>
           }
           actions={[
-            { label: 'BÀI TIẾP', onClick: next },
-            ...(success ? [] : [{ label: <><RotateCcwIcon size={12} /> LÀM LẠI</>, onClick: retry }]),
+            { label: 'NEXT', onClick: next },
+            ...(success ? [] : [{ label: <><RotateCcwIcon size={12} /> RETRY</>, onClick: retry }]),
             lichess,
           ]}
         />
@@ -351,63 +351,63 @@ function SidePanel() {
     <div className="puzzle-panel">
       <div className="puzzle-rating">
         <div className="puzzle-rating-head">
-          <span className="puzzle-label">Rating puzzle</span>
+          <span className="puzzle-label">Puzzle rating</span>
           <span className="puzzle-rating-value">
             {Math.round(rating.rating)}
-            {provisional && <span className="puzzle-rating-q" title="Chưa ổn định: cần thêm vài bài">?</span>}
+            {provisional && <span className="puzzle-rating-q" title="Provisional: needs a few more puzzles">?</span>}
           </span>
-          <span className="puzzle-muted">{rating.games} bài tính điểm</span>
+          <span className="puzzle-muted">{rating.games} rated puzzle{rating.games === 1 ? '' : 's'}</span>
         </div>
         <RatingSparkline points={series} />
       </div>
 
       <div className="puzzle-today">
-        <span className="puzzle-label">Hôm nay</span>
+        <span className="puzzle-label">Today</span>
         <span>
-          <b>{today.solved}</b> đúng · <b>{today.failed}</b> sai · <b>{today.minutes}</b> phút
+          <b>{today.solved}</b> solved · <b>{today.failed}</b> missed · <b>{today.minutes}</b> min
         </span>
       </div>
 
       <div className="puzzle-field">
-        <span className="puzzle-label">Chế độ</span>
+        <span className="puzzle-label">Mode</span>
         <Segmented
-          label="Chế độ"
+          label="Mode"
           value={settings.mode}
           onChange={(mode) => updateSettings({ mode })}
           options={[
-            { value: 'rated', label: 'Bài mới' },
-            { value: 'review', label: <>Ôn bài sai{dueCount > 0 && <span className="puzzle-badge">{dueCount}</span>}</> },
+            { value: 'rated', label: 'New puzzles' },
+            { value: 'review', label: <>Review misses{dueCount > 0 && <span className="puzzle-badge">{dueCount}</span>}</> },
           ]}
         />
       </div>
 
       {settings.mode === 'rated' && (
         <div className="puzzle-field">
-          <span className="puzzle-label">Độ khó</span>
+          <span className="puzzle-label">Difficulty</span>
           <Segmented<Difficulty>
-            label="Độ khó"
+            label="Difficulty"
             value={settings.difficulty}
             onChange={(difficulty) => updateSettings({ difficulty })}
             options={[
-              { value: -1, label: 'Dễ' },
-              { value: 0, label: 'Vừa' },
-              { value: 1, label: 'Khó' },
+              { value: -1, label: 'Easier' },
+              { value: 0, label: 'Normal' },
+              { value: 1, label: 'Harder' },
             ]}
           />
           <span className="puzzle-muted">
-            Bài quanh mức {Math.round(rating.rating + settings.difficulty * DIFFICULTY_OFFSET)}
+            Puzzles around {Math.round(rating.rating + settings.difficulty * DIFFICULTY_OFFSET)}
           </span>
         </div>
       )}
 
       <label className="puzzle-field">
-        <span className="puzzle-label">Chủ đề</span>
+        <span className="puzzle-label">Theme</span>
         <select
           className="puzzle-select"
           value={settings.theme ?? ''}
           onChange={(e) => updateSettings({ theme: e.target.value || null })}
         >
-          <option value="">Tất cả ({set?.puzzles.length ?? 0})</option>
+          <option value="">All ({set?.puzzles.length ?? 0})</option>
           {THEME_GROUPS.map((g) => (
             <optgroup key={g.label} label={g.label}>
               {g.themes
@@ -424,14 +424,14 @@ function SidePanel() {
 
       {weak.length > 0 && (
         <div className="puzzle-field">
-          <span className="puzzle-label">Chủ đề cần luyện thêm</span>
+          <span className="puzzle-label">Themes to work on</span>
           <ul className="puzzle-weak">
             {weak.map((w) => (
               <li key={w.theme}>
                 <button type="button" onClick={() => updateSettings({ theme: w.theme, mode: 'rated' })}>
                   <span>{themeLabel(w.theme)}</span>
                   <span className="puzzle-muted">
-                    {Math.round(w.successRate * 100)}% đúng / {w.attempts} bài
+                    {Math.round(w.successRate * 100)}% of {w.attempts}
                   </span>
                 </button>
               </li>
@@ -443,15 +443,15 @@ function SidePanel() {
       <div className="puzzle-sync">
         {owner ? (
           <span>
-            <CloudIcon size={14} /> Đồng bộ với tài khoản {owner}
+            <CloudIcon size={14} /> Synced to account {owner}
           </span>
         ) : (
           <span>
-            <HardDriveIcon size={14} /> Lưu trên trình duyệt này.{' '}
+            <HardDriveIcon size={14} /> Saved in this browser.{' '}
             <button type="button" className="puzzle-inline-link" onClick={openLogin}>
-              Đăng nhập
+              Log in
             </button>{' '}
-            để đồng bộ.
+            to sync.
           </span>
         )}
         {syncError && (
@@ -460,7 +460,7 @@ function SidePanel() {
           </span>
         )}
         <span className="puzzle-muted">
-          Bài tập từ{' '}
+          Puzzles from the{' '}
           <a href="https://database.lichess.org/#puzzles" target="_blank" rel="noopener noreferrer">
             Lichess puzzle database
           </a>{' '}
@@ -479,10 +479,10 @@ function RecentPanel() {
 
   return (
     <div className="puzzle-panel">
-      <span className="puzzle-label">Gần đây</span>
+      <span className="puzzle-label">Recent</span>
       {recent.length === 0 ? (
         <span className="puzzle-muted">
-          <CircleHelpIcon size={14} /> Chưa có bài nào. Kết quả từng bài sẽ hiện ở đây; bấm vào một bài để làm lại.
+          <CircleHelpIcon size={14} /> No puzzles yet. Results show up here; click one to replay it.
         </span>
       ) : (
         <ul className="puzzle-recent">
@@ -491,11 +491,11 @@ function RecentPanel() {
             const skill = p?.themes.find((t) => SKILL_THEMES.has(t));
             return (
               <li key={`${a.at}-${i}`}>
-                <button type="button" onClick={() => openPuzzle(a.itemId)} title="Làm lại bài này (không tính điểm)">
+                <button type="button" onClick={() => openPuzzle(a.itemId)} title="Replay this puzzle (not rated)">
                   {a.success ? <CheckCircle2Icon size={15} className="puzzle-ok" /> : <XIcon size={15} className="tip-cross" />}
                   <span className="puzzle-recent-theme">{skill ? themeLabel(skill) : 'Puzzle'}</span>
                   <span className="puzzle-muted">{p?.rating ?? ''}</span>
-                  <span className="puzzle-muted puzzle-recent-r">{a.ratingAfter != null ? Math.round(a.ratingAfter) : 'ôn'}</span>
+                  <span className="puzzle-muted puzzle-recent-r">{a.ratingAfter != null ? Math.round(a.ratingAfter) : 'review'}</span>
                 </button>
               </li>
             );
@@ -522,7 +522,7 @@ function MissingSet() {
   return (
     <CenterNote
       icon={<PuzzleIcon />}
-      title="Chưa có bộ puzzle"
+      title="No puzzle set yet"
       text={
         <>
           <p>

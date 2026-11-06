@@ -25,25 +25,25 @@ export default function Account() {
         <Card style={{ gap: 8 }}>
           <Text style={styles.title}>{user.username}</Text>
           <Text style={styles.muted}>
-            {connected ? 'Đang đồng bộ với server.' : 'Chưa kết nối được server, sẽ tự thử lại.'}
-            {pending ? ` ${pending} thay đổi đang chờ gửi.` : ''}
+            {connected ? 'Syncing with the server.' : "Can't reach the server, will retry."}
+            {pending ? ` ${pending} change${pending === 1 ? '' : 's'} waiting to upload.` : ''}
           </Text>
         </Card>
         <Button
           kind="danger"
-          title="Đăng xuất"
+          title="Log out"
           onPress={() =>
             Alert.alert(
-              'Đăng xuất?',
+              'Log out?',
               `${
                 pending
-                  ? `Còn ${pending} thay đổi chưa gửi lên server, đăng xuất sẽ mất chúng.`
-                  : 'App sẽ quay về chế độ offline.'
-              } Khoá đồng bộ (nếu có) cũng bị xoá khỏi máy, lần sau phải nhập lại.`,
+                  ? `${pending} change${pending === 1 ? ' has' : 's have'} not reached the server yet and will be lost.`
+                  : 'The app goes back to offline mode.'
+              } The sync key (if any) is removed from this device too; you will need to enter it again.`,
               [
-                { text: 'Huỷ', style: 'cancel' },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'Đăng xuất',
+                  text: 'Log out',
                   style: 'destructive',
                   onPress: async () => {
                     await logout();
@@ -65,7 +65,7 @@ export default function Account() {
       return;
     }
     if (res.kind === 'usernameTaken') {
-      setError('Tên người dùng này đã có người dùng.');
+      setError('That username is taken.');
       return;
     }
     await signedIn(res.token, res.user, res.chapters);
@@ -97,11 +97,11 @@ export default function Account() {
   };
 
   const forgot = async () => {
-    if (!email.trim()) return setError('Nhập email trước, rồi bấm "Quên mật khẩu".');
+    if (!email.trim()) return setError('Enter your email first, then tap "Forgot password".');
     setError(null);
     try {
       await sendPasswordReset(email.trim());
-      Alert.alert('Đã gửi email', 'Kiểm tra hộp thư để đặt lại mật khẩu.');
+      Alert.alert('Email sent', 'Check your inbox to reset your password.');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -111,14 +111,14 @@ export default function Account() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
         <Text style={styles.muted}>
-          Đăng nhập cùng tài khoản với bản web để luyện chung một repertoire. Không đăng nhập thì app vẫn dùng
-          được ở chế độ offline.
+          Log in with the same account as on the web to train one shared repertoire. Without an account the
+          app works offline.
         </Text>
 
         {pendingToken ? (
           <Card style={{ gap: 10 }}>
-            <Text style={styles.title}>Chọn tên người dùng</Text>
-            <Text style={styles.muted}>3–20 ký tự: chữ thường, số, dấu gạch dưới.</Text>
+            <Text style={styles.title}>Choose a username</Text>
+            <Text style={styles.muted}>3–20 characters: lowercase letters, digits, underscore.</Text>
             <TextInput
               value={username}
               onChangeText={setUsername}
@@ -129,7 +129,7 @@ export default function Account() {
               maxLength={20}
             />
             <Button
-              title="Tạo tài khoản"
+              title="Create account"
               busy={busy}
               disabled={!/^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase())}
               onPress={() => void submit()}
@@ -144,9 +144,9 @@ export default function Account() {
                 setError(null);
               }}
               options={[
-                { value: 'key', label: 'Khoá đồng bộ' },
+                { value: 'key', label: 'Sync key' },
                 { value: 'login', label: 'Email' },
-                { value: 'signup', label: 'Tạo TK' },
+                { value: 'signup', label: 'Sign up' },
               ]}
             />
             {mode === 'key' ? (
@@ -154,7 +154,7 @@ export default function Account() {
                 <TextInput
                   value={syncKey}
                   onChangeText={setSyncKey}
-                  placeholder="Dán khoá đồng bộ"
+                  placeholder="Paste the sync key"
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -162,14 +162,14 @@ export default function Account() {
                   onSubmitEditing={() => void submit()}
                 />
                 <Button
-                  title="Đăng nhập"
+                  title="Log in"
                   busy={busy}
                   disabled={!syncKey.trim()}
                   onPress={() => void submit()}
                 />
                 <Text style={styles.note}>
-                  Khoá là giá trị SYNC_KEY đặt trên Render. Chỉ nhập 1 lần: app nhớ khoá cho tới khi bạn đăng
-                  xuất.
+                  The key is the SYNC_KEY value set on Render. Enter it once: the app remembers it until you
+                  log out.
                 </Text>
               </>
             ) : (
@@ -186,14 +186,14 @@ export default function Account() {
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Mật khẩu"
+                  placeholder="Password"
                   secureTextEntry
                   autoComplete="password"
                   style={styles.input}
                   onSubmitEditing={() => void submit()}
                 />
                 <Button
-                  title={mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
+                  title={mode === 'login' ? 'Log in' : 'Create account'}
                   busy={busy}
                   disabled={!email.trim() || !password}
                   onPress={() => void submit()}
@@ -202,7 +202,7 @@ export default function Account() {
                   <Button
                     kind="ghost"
                     small
-                    title="Quên mật khẩu / đặt mật khẩu"
+                    title="Forgot / set password"
                     onPress={() => void forgot()}
                   />
                 )}
@@ -215,8 +215,8 @@ export default function Account() {
 
         {mode !== 'key' && (
           <Text style={styles.note}>
-            Tài khoản tạo bằng Google trên web: bấm “Quên mật khẩu / đặt mật khẩu” với email Google đó để đặt
-            mật khẩu, rồi đăng nhập bằng email + mật khẩu.
+            Signed up with Google on the web? Tap “Forgot / set password” with that Google email to set a
+            password, then log in with email + password.
           </Text>
         )}
       </ScrollView>

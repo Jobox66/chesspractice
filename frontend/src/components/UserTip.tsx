@@ -104,7 +104,7 @@ export const UserTip = () => {
   if (!chapter) return null;
   const san = trainableContext?.targetMove?.data.san;
   const isWhite = chapter.trainAs == 'white';
-  const side = isWhite ? 'Trắng' : 'Đen';
+  const side = isWhite ? 'White' : 'Black';
   // the move being asked is no longer in the queue
   const quizStep = quizTotal - quizQueue.length;
   switch (userTip) {
@@ -112,12 +112,12 @@ export const UserTip = () => {
       return (
         <Tip
           icon={<CheckCircle2Icon />}
-          title="Xong một nhánh"
-          description="Dừng lại kiểm tra trí nhớ: tự đi lại cả nhánh từ đầu, không có mũi tên gợi ý."
+          title="Line complete"
+          description="Test your memory: replay the whole line from the start, without arrows."
           descriptionClassName="tip-description-small"
           actions={[
-            { label: 'KIỂM TRA NGAY', onClick: startQuiz },
-            { label: 'HỌC TIẾP', onClick: setNextTrainable },
+            { label: 'TEST NOW', onClick: startQuiz },
+            { label: 'KEEP LEARNING', onClick: setNextTrainable },
           ]}
         />
       );
@@ -125,16 +125,16 @@ export const UserTip = () => {
       return (
         <Tip
           icon={<BrainIcon />}
-          title={`Kiểm tra trí nhớ · ${quizStep}/${quizTotal}`}
-          description={`${side} đi gì ở đây?`}
+          title={`Memory check · ${quizStep}/${quizTotal}`}
+          description={`What does ${side} play here?`}
         />
       );
     case 'quizFail':
       return (
         <Tip
           icon={<XIcon className="tip-cross" />}
-          title={`${lastGuess} chưa đúng`}
-          description={`Nước đúng là ${san}. Đi lại nước đó để tiếp tục.`}
+          title={`${lastGuess} is not it`}
+          description={`The move is ${san}. Play it to continue.`}
         />
       );
     case 'quizDone':
@@ -143,24 +143,24 @@ export const UserTip = () => {
           icon={<CheckCircle2Icon />}
           title={
             quizMistakes === 0
-              ? `Nhớ đúng cả ${quizTotal}/${quizTotal} nước!`
-              : `Đúng ${quizTotal - quizMistakes}/${quizTotal} nước`
+              ? `All ${quizTotal}/${quizTotal} moves remembered!`
+              : `${quizTotal - quizMistakes}/${quizTotal} moves correct`
           }
           description={
             quizMistakes === 0
-              ? 'Nhánh này đã vào đầu. Học tiếp nhánh sau nhé.'
-              : 'Nên kiểm tra lại một lượt nữa trước khi học tiếp.'
+              ? 'This line has stuck. On to the next one.'
+              : 'Worth one more run before moving on.'
           }
           descriptionClassName="tip-description-small"
           actions={
             quizMistakes === 0
               ? [
-                  { label: 'HỌC TIẾP', onClick: setNextTrainable },
-                  { label: 'KIỂM TRA LẠI', onClick: startQuiz },
+                  { label: 'KEEP LEARNING', onClick: setNextTrainable },
+                  { label: 'TEST AGAIN', onClick: startQuiz },
                 ]
               : [
-                  { label: 'KIỂM TRA LẠI', onClick: startQuiz },
-                  { label: 'HỌC TIẾP', onClick: setNextTrainable },
+                  { label: 'TEST AGAIN', onClick: startQuiz },
+                  { label: 'KEEP LEARNING', onClick: setNextTrainable },
                 ]
           }
         />

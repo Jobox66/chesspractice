@@ -68,7 +68,7 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
   try {
     res = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError(0, 'Không kết nối được server. Kiểm tra mạng rồi thử lại.');
+    throw new ApiError(0, "Can't reach the server. Check your connection and try again.");
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -93,15 +93,15 @@ export async function exchangeIdToken(idToken: string, username?: string): Promi
     if (!data?.sessionToken) {
       throw new ApiError(
         500,
-        'Server chưa hỗ trợ đăng nhập từ app (thiếu sessionToken). Hãy deploy backend mới.',
+        "The server doesn't support app login yet (no sessionToken). Deploy the latest backend.",
       );
     }
     return { kind: 'ok', token: data.sessionToken, user: data.user, chapters: data.chapters };
   } catch (e) {
     if (e instanceof ApiError && e.status === 409) return { kind: 'usernameTaken' };
-    if (e instanceof ApiError && e.status === 429) throw new ApiError(429, 'Thử quá nhiều lần. Đợi 1 phút.');
+    if (e instanceof ApiError && e.status === 429) throw new ApiError(429, 'Too many attempts. Wait a minute.');
     if (e instanceof ApiError && e.status === 400 && /username/.test(e.message)) {
-      throw new ApiError(400, 'Tên người dùng chỉ gồm 3–20 ký tự a-z, 0-9, _');
+      throw new ApiError(400, 'Usernames are 3–20 characters: a-z, 0-9, _');
     }
     throw e;
   }
@@ -115,14 +115,14 @@ export async function keyLogin(key: string): Promise<Extract<LoginResult, { kind
     return { kind: 'ok', token: data.sessionToken, user: data.user, chapters: data.chapters };
   } catch (e) {
     if (!(e instanceof ApiError)) throw e;
-    if (e.status === 401) throw new ApiError(401, 'Khoá đồng bộ không đúng.');
-    if (e.status === 429) throw new ApiError(429, 'Thử quá nhiều lần. Đợi 1 phút.');
+    if (e.status === 401) throw new ApiError(401, 'Wrong sync key.');
+    if (e.status === 429) throw new ApiError(429, 'Too many attempts. Wait a minute.');
     if (e.status === 404) {
       throw new ApiError(
         404,
         /sync account/.test(e.message)
-          ? 'Tài khoản SYNC_USERNAME chưa có trên server.'
-          : 'Server chưa bật khoá đồng bộ (thiếu SYNC_KEY / SYNC_USERNAME trên Render).',
+          ? "The SYNC_USERNAME account doesn't exist on the server."
+          : 'Sync key login is off on the server (SYNC_KEY / SYNC_USERNAME not set on Render).',
       );
     }
     throw e;

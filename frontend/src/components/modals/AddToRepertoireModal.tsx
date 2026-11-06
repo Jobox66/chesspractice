@@ -228,12 +228,12 @@ const AddToRepertoireModal: React.FC = () => {
         <div className="add-rep-form">
           <div className="add-rep-body">
             <p className="add-rep-json-intro">
-              Bộ khai cuộc dựng sẵn, có chú thích tiếng Việt. Mỗi chương là một cây biến: bạn
-              học nước của mình, các nhánh là những cách đáp phổ biến của đối thủ.
+              Ready-made opening chapters, annotated in Vietnamese. Each chapter is a tree: you
+              learn your own moves, and the branches are the opponent's common replies.
             </p>
             {(['white', 'black'] as const).map((color) => (
               <section key={color} className="add-rep-lib-group">
-                <h3 className="add-rep-lib-heading">{color === 'white' ? 'Cầm Trắng' : 'Cầm Đen'}</h3>
+                <h3 className="add-rep-lib-heading">{color === 'white' ? 'As White' : 'As Black'}</h3>
                 <ul className="add-rep-lib-list">
                   {OPENING_LIBRARY.filter((e) => e.trainAs === color).map((entry) => {
                     const added = addedNames.has(entry.name);

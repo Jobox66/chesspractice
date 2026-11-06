@@ -11,15 +11,15 @@ export function ServerWakeBanner() {
     <div className="server-wake" role="status" aria-live="polite">
       {failed ? (
         <>
-          <span>Không kết nối được server.</span>
+          <span>Can't reach the server.</span>
           <button type="button" onClick={() => window.location.reload()}>
-            Thử lại
+            Retry
           </button>
         </>
       ) : (
         <>
           <Loader2 className="server-wake__spinner" size={16} aria-hidden />
-          <span>Đang khởi động server (gói miễn phí), lần đầu mất khoảng 1 phút…</span>
+          <span>Starting the server (free tier), the first load takes about a minute…</span>
         </>
       )}
     </div>

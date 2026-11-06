@@ -11,7 +11,7 @@ export function RatingSparkline({ points }: { points: RatingPoint[] }) {
   const [hover, setHover] = useState<number | null>(null);
 
   if (points.length < 2) {
-    return <div className="spark-empty">Biểu đồ rating hiện sau vài bài tính điểm.</div>;
+    return <div className="spark-empty">The rating chart appears after a few rated puzzles.</div>;
   }
 
   const values = points.map((p) => p.rating);
@@ -43,7 +43,7 @@ export function RatingSparkline({ points }: { points: RatingPoint[] }) {
       onPointerDown={onMove}
       onPointerLeave={() => setHover(null)}
       role="img"
-      aria-label={`Rating ${points.length} bài gần nhất: từ ${Math.round(values[0])} đến ${Math.round(values.at(-1)!)}`}
+      aria-label={`Rating over the last ${points.length} puzzles: from ${Math.round(values[0])} to ${Math.round(values.at(-1)!)}`}
     >
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="spark-svg">
         <path d={path} className="spark-line" vectorEffect="non-scaling-stroke" />
@@ -53,7 +53,7 @@ export function RatingSparkline({ points }: { points: RatingPoint[] }) {
           <span className="spark-dot" style={{ left: `${(x(active) / W) * 100}%`, top: `${(y(p.rating) / H) * 100}%` }} />
           <span className={`spark-tip ${active > points.length / 2 ? 'is-left' : ''}`}>
             <b>{Math.round(p.rating)}</b>{' '}
-            {new Date(p.at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+            {new Date(p.at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
           </span>
         </>
       )}

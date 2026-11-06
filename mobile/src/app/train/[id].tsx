@@ -95,8 +95,8 @@ export default function Train() {
   if (!chapter || !view) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>Không tìm thấy chương này.</Text>
-        <Button title="Về danh sách" onPress={() => router.back()} />
+        <Text style={styles.muted}>Chapter not found.</Text>
+        <Button title="Back to chapters" onPress={() => router.back()} />
       </View>
     );
   }
@@ -170,7 +170,7 @@ export default function Train() {
       if (!correct) return;
       setCard(chapter.uuid, targetPath, createCard());
       setStats((s) => ({ ...s, learned: s.learned + 1 }));
-      setFeedback(t.data.comment ? null : { text: `Đã học: ${t.data.san}`, color: theme.success });
+      setFeedback(t.data.comment ? null : { text: `Learned: ${t.data.san}`, color: theme.success });
       showThen(fen, mv.san, from, to, () => afterLearn(targetPath));
       return;
     }
@@ -182,12 +182,12 @@ export default function Train() {
       const card = cardOf(t.data, key);
       if (card && card.reps === 0) setCard(chapter.uuid, targetPath, reviewCard(card, correct));
       if (correct) {
-        setFeedback({ text: 'Chính xác!', color: theme.success });
+        setFeedback({ text: 'Correct!', color: theme.success });
         showThen(fen, mv.san, from, to, nextQuiz);
       } else {
         setQuiz((q) => ({ ...q, mistakes: q.mistakes + 1 }));
         setWrong([from, to]);
-        setFeedback({ text: `Chưa đúng. Nước đúng là ${t.data.san} — đi lại theo mũi tên đỏ.`, color: theme.danger });
+        setFeedback({ text: `Not it. The move is ${t.data.san}: play it along the red arrow.`, color: theme.danger });
         setPhase('quizFail');
       }
       return;
@@ -197,7 +197,7 @@ export default function Train() {
     const parent = getNodeList(chapter.root, ctx.startingPath).pop();
     const isAlternate = !correct && parent?.children.some((c) => c.data.id === mv.id);
     if (isAlternate) {
-      setFeedback({ text: `${mv.san} cũng có trong repertoire, nhưng đang ôn nước khác ở thế này. Thử lại.`, color: theme.warn });
+      setFeedback({ text: `${mv.san} is also in the repertoire, but another move is being reviewed here. Try again.`, color: theme.warn });
       return;
     }
     const card = cardOf(t.data, key) ?? createCard();
@@ -205,11 +205,11 @@ export default function Train() {
     setCard(chapter.uuid, targetPath, reviewed);
     setStats((s) => ({ ...s, reviewed: s.reviewed + 1, correct: s.correct + (correct ? 1 : 0) }));
     if (correct) {
-      setFeedback({ text: `Chính xác! Ôn lại sau ${formatDuration(dueAt(reviewed) - Date.now())}.`, color: theme.success });
+      setFeedback({ text: `Correct! Next review in ${formatDuration(dueAt(reviewed) - Date.now())}.`, color: theme.success });
       showThen(fen, mv.san, from, to, advanceRecall);
     } else {
       setWrong([from, to]);
-      setFeedback({ text: `Sai. Nước đúng là ${t.data.san} — đi lại nước đó để tiếp tục.`, color: theme.danger });
+      setFeedback({ text: `Wrong. The move is ${t.data.san}: play it to continue.`, color: theme.danger });
       setPhase('fail');
     }
   };
@@ -229,7 +229,7 @@ export default function Train() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: `${method === 'learn' ? 'Học' : 'Ôn'} · ${chapter.name}` }} />
+      <Stack.Screen options={{ title: `${method === 'learn' ? 'Learn' : 'Recall'} · ${chapter.name}` }} />
       <Board
         fen={view.fen}
         orientation={chapter.trainAs}
@@ -244,8 +244,8 @@ export default function Train() {
       <ScrollView contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 20 + insets.bottom }}>
         <Text style={styles.progress}>
           {method === 'learn'
-            ? `Còn ${chapter.unseenCount} nước chưa học · đã học ${stats.learned} trong lượt này`
-            : `Còn ${chapter.lastDueCount} nước cần ôn · đúng ${stats.correct}/${stats.reviewed}`}
+            ? `${chapter.unseenCount} moves to learn · ${stats.learned} learned this session`
+            : `${chapter.lastDueCount} moves due · ${stats.correct}/${stats.reviewed} correct`}
         </Text>
 
         <Prompt
@@ -260,16 +260,16 @@ export default function Train() {
 
         <View style={styles.row}>
           {(phase === 'play' && method === 'recall') || phase === 'quiz' ? (
-            <Button kind="secondary" title={hint ? 'Đang gợi ý' : 'Gợi ý'} disabled={hint} onPress={() => setHint(true)} style={{ flex: 1 }} />
+            <Button kind="secondary" title={hint ? 'Hint shown' : 'Hint'} disabled={hint} onPress={() => setHint(true)} style={{ flex: 1 }} />
           ) : null}
           {phase === 'lineDone' && (
             <>
-              <Button title="Kiểm tra lại biến" onPress={startQuiz} style={{ flex: 1 }} />
-              <Button kind="secondary" title="Học tiếp" onPress={() => goTo(findNext('learn'))} style={{ flex: 1 }} />
+              <Button title="Test the line" onPress={startQuiz} style={{ flex: 1 }} />
+              <Button kind="secondary" title="Keep learning" onPress={() => goTo(findNext('learn'))} style={{ flex: 1 }} />
             </>
           )}
-          {phase === 'quizDone' && <Button title="Học tiếp" onPress={() => goTo(findNext('learn'))} style={{ flex: 1 }} />}
-          {phase === 'done' && <Button title="Về danh sách" onPress={() => router.back()} style={{ flex: 1 }} />}
+          {phase === 'quizDone' && <Button title="Keep learning" onPress={() => goTo(findNext('learn'))} style={{ flex: 1 }} />}
+          {phase === 'done' && <Button title="Back to chapters" onPress={() => router.back()} style={{ flex: 1 }} />}
         </View>
 
         {!!comments && (
@@ -298,28 +298,28 @@ function Prompt({
   let text = '';
   switch (phase) {
     case 'play':
-      text = method === 'learn' ? `Đi nước theo mũi tên xanh: ${san}` : 'Đến lượt bạn: nhớ lại nước trong repertoire.';
+      text = method === 'learn' ? `Play the move on the green arrow: ${san}` : 'Your turn: recall the repertoire move.';
       break;
     case 'fail':
     case 'quizFail':
-      text = 'Đi lại nước đúng theo mũi tên đỏ.';
+      text = 'Play the correct move along the red arrow.';
       break;
     case 'lineDone':
-      text = 'Đã học hết một biến. Kiểm tra lại cả biến từ đầu, không có mũi tên?';
+      text = 'Line complete. Test the whole line from the start, without arrows?';
       break;
     case 'quiz':
-      text = `Kiểm tra: nước ${quiz.total - quiz.queue.length}/${quiz.total}, tự đi nước của bạn.`;
+      text = `Memory check: move ${quiz.total - quiz.queue.length}/${quiz.total}, play your move.`;
       break;
     case 'quizDone':
-      text = `Kiểm tra xong: đúng ${quiz.total - quiz.mistakes}/${quiz.total} nước.`;
+      text = `Check done: ${quiz.total - quiz.mistakes}/${quiz.total} moves correct.`;
       break;
     case 'done':
       text =
         method === 'learn'
-          ? 'Đã học hết các nước mới trong chương này.'
+          ? 'All new moves in this chapter are learned.'
           : nextDue != null
-            ? `Hết nước cần ôn. Nước tiếp theo đến hạn sau ${formatDuration(nextDue)}.`
-            : 'Hết nước cần ôn.';
+            ? `Nothing due. The next move is due in ${formatDuration(nextDue)}.`
+            : 'Nothing due.';
       break;
   }
   return <Text style={styles.prompt}>{text}</Text>;

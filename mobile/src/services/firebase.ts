@@ -7,19 +7,19 @@ import { FIREBASE_API_KEY } from './config';
 const BASE = 'https://identitytoolkit.googleapis.com/v1/accounts';
 
 const MESSAGES: Record<string, string> = {
-  EMAIL_NOT_FOUND: 'Sai email hoặc mật khẩu.',
-  INVALID_PASSWORD: 'Sai email hoặc mật khẩu.',
-  INVALID_LOGIN_CREDENTIALS: 'Sai email hoặc mật khẩu.',
-  INVALID_EMAIL: 'Email không hợp lệ.',
-  EMAIL_EXISTS: 'Email này đã có tài khoản. Hãy đăng nhập.',
-  USER_DISABLED: 'Tài khoản đã bị khoá.',
-  TOO_MANY_ATTEMPTS_TRY_LATER: 'Thử quá nhiều lần. Đợi một lúc rồi thử lại.',
-  MISSING_PASSWORD: 'Chưa nhập mật khẩu.',
-  OPERATION_NOT_ALLOWED: 'Đăng nhập bằng email/mật khẩu chưa được bật trong Firebase.',
+  EMAIL_NOT_FOUND: 'Wrong email or password.',
+  INVALID_PASSWORD: 'Wrong email or password.',
+  INVALID_LOGIN_CREDENTIALS: 'Wrong email or password.',
+  INVALID_EMAIL: 'Invalid email.',
+  EMAIL_EXISTS: 'This email already has an account. Log in instead.',
+  USER_DISABLED: 'This account is disabled.',
+  TOO_MANY_ATTEMPTS_TRY_LATER: 'Too many attempts. Wait a while and try again.',
+  MISSING_PASSWORD: 'Enter a password.',
+  OPERATION_NOT_ALLOWED: 'Email/password sign-in is not enabled in Firebase.',
 };
 
 async function call(endpoint: string, body: object): Promise<any> {
-  if (!FIREBASE_API_KEY) throw new Error('App chưa được cấu hình EXPO_PUBLIC_FIREBASE_API_KEY.');
+  if (!FIREBASE_API_KEY) throw new Error('The app is missing EXPO_PUBLIC_FIREBASE_API_KEY.');
   let res: Response;
   try {
     res = await fetch(`${BASE}:${endpoint}?key=${encodeURIComponent(FIREBASE_API_KEY)}`, {
@@ -28,15 +28,15 @@ async function call(endpoint: string, body: object): Promise<any> {
       body: JSON.stringify(body),
     });
   } catch {
-    throw new Error('Không kết nối được Firebase. Kiểm tra mạng.');
+    throw new Error("Can't reach Firebase. Check your connection.");
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const code: string = data?.error?.message ?? '';
     // codes look like "WEAK_PASSWORD : Password should be at least 6 characters"
     const key = code.split(' ')[0];
-    if (key === 'WEAK_PASSWORD') throw new Error('Mật khẩu cần ít nhất 6 ký tự.');
-    throw new Error(MESSAGES[key] ?? `Lỗi Firebase: ${code || res.status}`);
+    if (key === 'WEAK_PASSWORD') throw new Error('Passwords need at least 6 characters.');
+    throw new Error(MESSAGES[key] ?? `Firebase error: ${code || res.status}`);
   }
   return data;
 }

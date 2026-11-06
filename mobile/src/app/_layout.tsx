@@ -33,14 +33,14 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" options={{ title: 'Chess Practice' }} />
           <Stack.Screen name="train/[id]" options={{ title: '' }} />
-          <Stack.Screen name="add" options={{ title: 'Thêm chương' }} />
-          <Stack.Screen name="account" options={{ title: 'Tài khoản' }} />
+          <Stack.Screen name="add" options={{ title: 'Add chapter' }} />
+          <Stack.Screen name="account" options={{ title: 'Account' }} />
         </Stack>
       )}
       {waking && (
         <SafeAreaView edges={['bottom']} style={styles.wake}>
           <ActivityIndicator size="small" color="#fff" />
-          <Text style={styles.wakeText}>Đang đánh thức server (có thể mất ~1 phút)…</Text>
+          <Text style={styles.wakeText}>Waking the server (may take about a minute)…</Text>
         </SafeAreaView>
       )}
     </SafeAreaProvider>

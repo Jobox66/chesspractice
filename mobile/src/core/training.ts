@@ -40,14 +40,14 @@ const pgnCtx = (pos: Position, ply: number): PgnCtx => ({
 // message on bad input.
 export function chapterFromPgn(rawPgn: string, trainAs: Color, name: string): Chapter {
   const game = parsePgn(rawPgn)[0];
-  if (!game) throw new Error('Không tìm thấy ván cờ nào trong PGN');
+  if (!game) throw new Error('No game found in the PGN');
   let enabledCount = 0;
   const moves = transform<PgnNodeData, TrainingData, PgnCtx>(
     game.moves,
     pgnCtx(defaultPosition('chess'), 0),
     (ctx, data) => {
       const move = parseSan(ctx.pos, data.san);
-      if (!move) throw new Error(`Nước đi không hợp lệ: ${data.san}`);
+      if (!move) throw new Error(`Illegal move: ${data.san}`);
       ctx.pos.play(move);
       ctx.ply++;
       const enabled = (ctx.ply % 2 === 1) === (trainAs === 'white');
@@ -63,7 +63,7 @@ export function chapterFromPgn(rawPgn: string, trainAs: Color, name: string): Ch
       };
     },
   );
-  if (!moves.children.length) throw new Error('PGN không có nước đi nào');
+  if (!moves.children.length) throw new Error('The PGN has no moves');
   return {
     name,
     trainAs,
@@ -162,10 +162,10 @@ export function nextDueIn(chapter: Chapter, key: string | null): number | null {
 
 export function formatDuration(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
-  if (s < 60) return `${s} giây`;
-  if (s < 3600) return `${Math.round(s / 60)} phút`;
-  if (s < 86400) return `${Math.round(s / 3600)} giờ`;
-  if (s < 86400 * 30) return `${Math.round(s / 86400)} ngày`;
-  if (s < 86400 * 365) return `${Math.round(s / (86400 * 30))} tháng`;
-  return `${(s / (86400 * 365)).toFixed(1)} năm`;
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  if (s < 86400) return `${Math.round(s / 3600)} h`;
+  if (s < 86400 * 30) return `${Math.round(s / 86400)} d`;
+  if (s < 86400 * 365) return `${Math.round(s / (86400 * 30))} mo`;
+  return `${(s / (86400 * 365)).toFixed(1)} y`;
 }

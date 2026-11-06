@@ -25,22 +25,22 @@ export default function Home() {
   const openMenu = (c: Chapter) =>
     Alert.alert(c.name, undefined, [
       {
-        text: 'Đổi tên',
+        text: 'Rename',
         onPress: () => {
           setNewName(c.name);
           setRenaming(c);
         },
       },
       {
-        text: 'Xoá',
+        text: 'Delete',
         style: 'destructive',
         onPress: () =>
-          Alert.alert('Xoá chương?', `"${c.name}" và toàn bộ tiến độ luyện tập của chương sẽ bị xoá.`, [
-            { text: 'Huỷ', style: 'cancel' },
-            { text: 'Xoá', style: 'destructive', onPress: () => deleteChapter(c.uuid) },
+          Alert.alert('Delete chapter?', `"${c.name}" and all its training progress will be deleted.`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: () => deleteChapter(c.uuid) },
           ]),
       },
-      { text: 'Đóng', style: 'cancel' },
+      { text: 'Close', style: 'cancel' },
     ]);
 
   return (
@@ -49,7 +49,7 @@ export default function Home() {
         options={{
           headerRight: () => (
             <Pressable onPress={() => router.push('/account')} hitSlop={10}>
-              <Text style={styles.account}>{user ? user.username : 'Đăng nhập'}</Text>
+              <Text style={styles.account}>{user ? user.username : 'Log in'}</Text>
             </Pressable>
           ),
         }}
@@ -63,25 +63,25 @@ export default function Home() {
           <View style={{ gap: 10 }}>
             <Text style={styles.status}>
               {user
-                ? `Đồng bộ với tài khoản ${user.username} · ${connected ? 'đang kết nối' : 'mất kết nối'}${
-                    pending ? ` · ${pending} thay đổi chờ gửi` : ''
+                ? `Synced to ${user.username} · ${connected ? 'connected' : 'offline'}${
+                    pending ? ` · ${pending} change${pending === 1 ? '' : 's'} pending` : ''
                   }`
-                : 'Chế độ offline: dữ liệu chỉ lưu trên máy này'}
+                : 'Offline mode: data is stored on this device only'}
             </Text>
             {error && (
               <Banner
                 text={error}
                 color={theme.danger}
-                action={<Button small kind="secondary" title="Thử lại" onPress={() => void refresh()} />}
+                action={<Button small kind="secondary" title="Retry" onPress={() => void refresh()} />}
               />
             )}
-            {totalDue > 0 && <Text style={styles.dueTotal}>{totalDue} nước cần ôn hôm nay</Text>}
+            {totalDue > 0 && <Text style={styles.dueTotal}>{totalDue} move{totalDue === 1 ? '' : 's'} due today</Text>}
           </View>
         }
         ListEmptyComponent={
           loading ? undefined : (
             <Card>
-              <Text style={styles.empty}>Chưa có chương nào. Bấm “Thêm chương” để bắt đầu.</Text>
+              <Text style={styles.empty}>No chapters yet. Tap “Add chapter” to start.</Text>
             </Card>
           )
         }
@@ -98,21 +98,21 @@ export default function Home() {
                 </Pressable>
               </View>
               <Text style={styles.counts}>
-                <Text style={c.lastDueCount ? styles.due : undefined}>{c.lastDueCount} cần ôn</Text>
-                {`  ·  ${c.unseenCount} chưa học  ·  ${c.enabledCount} nước`}
+                <Text style={c.lastDueCount ? styles.due : undefined}>{c.lastDueCount} due</Text>
+                {`  ·  ${c.unseenCount} to learn  ·  ${c.enabledCount} moves`}
               </Text>
               <View style={styles.actions}>
                 <Button
                   small
                   kind="secondary"
-                  title="Học mới"
+                  title="Learn"
                   disabled={!c.unseenCount}
                   style={{ flex: 1 }}
                   onPress={() => router.push({ pathname: '/train/[id]', params: { id: c.uuid, mode: 'learn' } })}
                 />
                 <Button
                   small
-                  title="Ôn tập"
+                  title="Recall"
                   disabled={!c.lastDueCount}
                   style={{ flex: 1 }}
                   onPress={() => router.push({ pathname: '/train/[id]', params: { id: c.uuid, mode: 'recall' } })}
@@ -123,18 +123,18 @@ export default function Home() {
         )}
       />
       <View style={[styles.fab, { bottom: 16 + insets.bottom }]}>
-        <Button title="+ Thêm chương" onPress={() => router.push('/add')} />
+        <Button title="+ Add chapter" onPress={() => router.push('/add')} />
       </View>
 
       <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
         <View style={styles.modalBg}>
           <Card style={{ width: '86%', gap: 12 }}>
-            <Text style={styles.modalTitle}>Đổi tên chương</Text>
+            <Text style={styles.modalTitle}>Rename chapter</Text>
             <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus maxLength={100} />
             <View style={styles.actions}>
-              <Button kind="secondary" title="Huỷ" style={{ flex: 1 }} onPress={() => setRenaming(null)} />
+              <Button kind="secondary" title="Cancel" style={{ flex: 1 }} onPress={() => setRenaming(null)} />
               <Button
-                title="Lưu"
+                title="Save"
                 style={{ flex: 1 }}
                 disabled={!newName.trim()}
                 onPress={() => {

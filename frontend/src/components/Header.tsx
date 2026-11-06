@@ -6,8 +6,8 @@ import { useTrainerStore, type Peer } from '../store/state';
 import { navigate, useRoute, type Page } from '../util/route';
 
 const PAGES: { page: Page; label: string }[] = [
-  { page: 'openings', label: 'Khai cuộc' },
-  { page: 'puzzles', label: 'Puzzle' },
+  { page: 'openings', label: 'Openings' },
+  { page: 'puzzles', label: 'Puzzles' },
 ];
 
 interface Props {
@@ -40,7 +40,7 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
 
       {/* Which practice mode: same recessed track + raised chip as the
           board's Edit/Learn/Recall control. */}
-      <nav className="header-nav" aria-label="Chế độ luyện">
+      <nav className="header-nav" aria-label="Practice mode">
         {PAGES.map(({ page: p, label }) => (
           <button
             key={p}

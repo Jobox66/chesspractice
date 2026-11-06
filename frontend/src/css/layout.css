@@ -195,7 +195,7 @@
   color: var(--c-wordmark-accent);
 }
 
-/* Practice-mode tabs (Khai cuộc / Puzzle): the recessed track and raised
+/* Practice-mode tabs (Openings / Puzzles): the recessed track and raised
    chip of .control-tab, at header scale. */
 #header .header-nav {
   display: inline-flex;
@@ -298,9 +298,19 @@
     display: none;
   }
 
+  #header .header-nav {
+    gap: 0;
+  }
+
   #header .header-nav-btn {
-    padding: 0.1875rem 0.4375rem;
+    padding: 0.1875rem 0.3125rem;
     font-size: 0.8125rem;
+  }
+
+  /* The sign-in label stays, but at body size rather than wordmark size,
+     so it fits beside the tabs. */
+  #header .header-signin {
+    font-size: 0.875rem;
   }
 }
 

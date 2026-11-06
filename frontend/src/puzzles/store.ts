@@ -57,7 +57,7 @@ export interface Settings {
   theme: string | null;
 }
 
-// Points above/below your rating for Dễ / Khó.
+// Points above/below your rating for Easier / Harder.
 export const DIFFICULTY_OFFSET = 250;
 // Pick at random among this many puzzles closest to the target, so the
 // order isn't the same for everyone and retries of "next" vary.
@@ -168,8 +168,8 @@ async function flushQueue() {
     usePuzzleStore.setState({
       syncError:
         err instanceof HttpError && err.status === 401
-          ? 'Phiên đăng nhập đã hết hạn, kết quả chưa được lưu. Hãy đăng nhập lại.'
-          : 'Chưa lưu được kết quả lên server, sẽ thử lại ở bài sau.',
+          ? 'Your session has expired, so results are not being saved. Please log in again.'
+          : "Couldn't save to the server; will retry after the next puzzle.",
     });
   } finally {
     flushing = false;
@@ -369,8 +369,8 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
         set({
           syncError:
             err instanceof HttpError && err.status === 401
-              ? 'Phiên đăng nhập đã hết hạn: đang dùng tiến độ lưu trên trình duyệt này.'
-              : 'Không tải được tiến độ từ server: đang dùng tiến độ lưu trên trình duyệt này.',
+              ? 'Your session has expired: using the progress saved in this browser.'
+              : "Couldn't load progress from the server: using the progress saved in this browser.",
         });
       }
       if (token !== loadCounter) return;
