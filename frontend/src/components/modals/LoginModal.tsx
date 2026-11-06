@@ -49,9 +49,16 @@ function describeFirebaseError(err: unknown): string | null {
       return 'Network error. Check your connection and try again.';
     case 'auth/popup-blocked':
       return 'Your browser blocked the sign-in popup.';
+    // Setup problems in the Firebase console rather than user mistakes.
+    case 'auth/configuration-not-found':
+      return 'Sign-in is not set up yet: open Firebase console → Authentication → Get started.';
+    case 'auth/operation-not-allowed':
+      return 'This sign-in method is off: enable it in Firebase console → Authentication → Sign-in method.';
+    case 'auth/unauthorized-domain':
+      return 'This site is not an authorized domain in Firebase (Authentication → Settings).';
     default:
       console.error('firebase auth error', err);
-      return 'Something went wrong. Try again.';
+      return code ? `Something went wrong (${code}). Try again.` : 'Something went wrong. Try again.';
   }
 }
 
