@@ -8,6 +8,7 @@ import { navigate, useRoute, type Page } from '../util/route';
 const PAGES: { page: Page; label: string }[] = [
   { page: 'openings', label: 'Openings' },
   { page: 'puzzles', label: 'Puzzles' },
+  { page: 'play', label: 'Play' },
 ];
 
 interface Props {
