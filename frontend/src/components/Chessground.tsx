@@ -66,5 +66,5 @@ export function Chessground(
     });
   }, [api, props]);
 
-  return <div className="chessground-wrap merida blue" ref={ref} />;
+  return <div className="chessground-wrap merida brown" ref={ref} />;
 }

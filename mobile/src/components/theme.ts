@@ -1,4 +1,4 @@
-// Colors. Board squares follow the web app's blue board.
+// Colors. Board squares follow the web app's brown board.
 export const theme = {
   bg: '#f4f5f7',
   card: '#ffffff',
@@ -11,8 +11,8 @@ export const theme = {
   success: '#2e9d57',
   warn: '#d98e04',
 
-  boardLight: '#dee3e6',
-  boardDark: '#8ca2ad',
+  boardLight: '#f0d9b5',
+  boardDark: '#b58863',
   lastMove: 'rgba(155,199,0,0.41)',
   selected: 'rgba(20,85,30,0.5)',
   dest: 'rgba(20,85,30,0.5)',

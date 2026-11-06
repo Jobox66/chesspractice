@@ -5,6 +5,11 @@
   background-image: url('../images/board/blue2.jpg');
 }
 
+/* Classic wood-brown squares (#f0d9b5 / #b58863), the board in use. */
+.brown cg-board {
+  background-image: url('/images/board/brown.svg');
+}
+
 .pawn.white {
   background-image: url('../images/pieces/merida/wP.svg');
 }
