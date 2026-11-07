@@ -170,7 +170,7 @@ export const OPENING_LIBRARY: LibraryEntry[] = [
 2... c6 { Phòng thủ Slav: giữ d5 bằng Tốt c6, Tượng c8 vẫn ra được f5/g4. }
 3. Nf3
 (3. Nc3 Nf6 4. Nf3
-  (4. e3 Bf5 5. Nf3 e6 { Giống nhánh 4.e3. })
+  (4. e3 e6 5. Nf3 Nbd7 { Chuyển sang Semi-Slav chắc chắn. })
   (4. cxd5 cxd5 5. Bf4 Nc6 { Giống biến Đổi quân. })
  4... dxc4 { Giống nhánh chính. })
 (3. cxd5 { Biến Đổi quân. } 3... cxd5 4. Nc3 Nf6 5. Bf4 Nc6 6. e3 Bf5 7. Nf3 e6 8. Qb3 Bb4 9. Bb5 O-O { Thế đối xứng, Đen dễ cân bằng. })
@@ -214,7 +214,7 @@ export const OPENING_LIBRARY: LibraryEntry[] = [
 (2. Nc3 Nf6 3. d4 g6 { Về nhánh chính. })
 (2. Nf3 Nf6 3. Nc3 g6 4. d4 Bg7 { Về Classical. })
 2... Nf6 3. Nc3
-(3. Nd2 g6 4. Ngf3 Bg7 5. Be2 O-O 6. O-O c6 { Chuẩn bị ...e5 hoặc ...b5. })
+(3. Nd2 g6 4. Ngf3 Bg7 5. Be2 O-O 6. O-O Nc6 { Gây áp lực lên d4 ngay, chuẩn bị ...e5. })
 3... g6 4. f4
 (4. Be3 { Tấn công 150: Be3, Qd2, Bh6. } 4... c6 5. Qd2 b5 6. f3 Nbd7 { Phản công cánh hậu bằng ...b4, ...Qa5 trước khi Trắng tấn công. })
 (4. Nf3 { Classical. } 4... Bg7 5. Be2 O-O 6. O-O Bg4 7. Be3 Nc6 8. Qd2 e5 9. d5 Ne7 { Chuẩn bị ...Nd7, ...f5 phản công cánh vua. })
