@@ -32,7 +32,17 @@ import { useAuthStore } from '../store/auth';
 import { fenToDests, isPromotionMove } from '../util/chess';
 import { MAX_ELO, MIN_ELO, ELO_STEP, usePlayStore, useShown } from './store';
 import { MIN_UCI_ELO } from './engine';
-import { isCheck, pgnResult, resultText, toPgn, turnOf, type Color, type Game } from './game';
+import {
+  calculateMaterial,
+  isCheck,
+  pgnResult,
+  resultText,
+  toPgn,
+  turnOf,
+  type Color,
+  type Game,
+  type PieceRole,
+} from './game';
 import {
   accuracy,
   evalText,
@@ -130,6 +140,70 @@ export default function PlayPage() {
 
 // ---------------------------------------------------------------------------
 
+export function CapturedPieces(props: {
+  pieces: PieceRole[];
+  pieceColor: Color; // Color of the captured pieces ('white' | 'black')
+  advantage?: number; // Advantage in material (> 0)
+  compact?: boolean;
+}) {
+  const { pieces, pieceColor, advantage, compact } = props;
+  if (pieces.length === 0 && (!advantage || advantage <= 0)) return null;
+
+  return (
+    <div className={`play-captured-wrap ${compact ? 'is-compact' : ''}`}>
+      <div className="play-captured-list">
+        {pieces.map((role, idx) => {
+          const letter = role.toUpperCase();
+          const prefix = pieceColor === 'white' ? 'w' : 'b';
+          const src = `/images/pieces/merida/${prefix}${letter}.svg`;
+          return (
+            <img
+              key={`${role}-${idx}`}
+              src={src}
+              alt={`${pieceColor} ${role}`}
+              className="play-captured-img"
+            />
+          );
+        })}
+      </div>
+      {advantage != null && advantage > 0 && (
+        <span className="play-captured-adv">+{advantage}</span>
+      )}
+    </div>
+  );
+}
+
+function BoardPlayerBar(props: {
+  side: Color;
+  isTop: boolean;
+  name: string;
+  elo?: number;
+  isActiveTurn: boolean;
+  isEngineThinking?: boolean;
+  captured: PieceRole[];
+  capturedColor: Color;
+  advantage: number;
+}) {
+  const { side, isTop, name, elo, isActiveTurn, isEngineThinking, captured, capturedColor, advantage } = props;
+
+  return (
+    <div className={`play-player-bar ${isTop ? 'is-top' : 'is-bottom'} ${isActiveTurn ? 'is-active-turn' : ''}`}>
+      <div className="play-player-meta">
+        <span className={`play-color-dot is-${side}`} />
+        <span className="play-player-name">{name}</span>
+        {elo != null && <span className="play-player-elo">{eloLabel(elo)}</span>}
+        {isEngineThinking && (
+          <span className="play-thinking-indicator">
+            <Loader2Icon size={12} className="play-spin" />
+            <span>thinking…</span>
+          </span>
+        )}
+      </div>
+      <CapturedPieces pieces={captured} pieceColor={capturedColor} advantage={advantage} />
+    </div>
+  );
+}
+
 function PlayBoard() {
   const { game, fens } = useShown();
   const { viewPly, engine, hint, move, flipped, review } = usePlayStore();
@@ -146,6 +220,30 @@ function PlayBoard() {
   const lastUci = ply > 0 ? game?.moves[ply - 1] : undefined;
   const check = useMemo(() => isCheck(fen), [fen]);
 
+  const topSide: Color = orientation === 'white' ? 'black' : 'white';
+  const bottomSide: Color = orientation;
+
+  const currentTurn = turnOf(fen);
+  const material = useMemo(() => calculateMaterial(fen), [fen]);
+
+  const topIsUser = topSide === player;
+  const topName = topIsUser ? 'You' : 'Stockfish';
+  const topElo = topIsUser ? undefined : game?.elo;
+  const topIsThinking = !topIsUser && engine === 'thinking' && currentTurn === topSide && !game?.result;
+
+  const bottomIsUser = bottomSide === player;
+  const bottomName = bottomIsUser ? 'You' : 'Stockfish';
+  const bottomElo = bottomIsUser ? undefined : game?.elo;
+  const bottomIsThinking = !bottomIsUser && engine === 'thinking' && currentTurn === bottomSide && !game?.result;
+
+  const topCaptured = topSide === 'white' ? material.capturedByWhite : material.capturedByBlack;
+  const topCapturedColor: Color = topSide === 'white' ? 'black' : 'white';
+  const topAdvantage = topSide === 'white' ? material.diff : -material.diff;
+
+  const bottomCaptured = bottomSide === 'white' ? material.capturedByWhite : material.capturedByBlack;
+  const bottomCapturedColor: Color = bottomSide === 'white' ? 'black' : 'white';
+  const bottomAdvantage = bottomSide === 'white' ? material.diff : -material.diff;
+
   const shapes: DrawShape[] = [];
   if (hint && live && hint.ply === (game?.moves.length ?? -1)) {
     shapes.push({ orig: hint.uci.slice(0, 2) as Key, dest: hint.uci.slice(2, 4) as Key, brush: 'green' });
@@ -157,44 +255,68 @@ function PlayBoard() {
   }
 
   return (
-    <div className="board-card puzzle-board-card" ref={cardRef}>
-      <Chessground
-        dimensionsRef={cardRef}
-        orientation={orientation}
-        fen={fen}
-        turnColor={turnOf(fen)}
-        lastMove={lastUci ? [lastUci.slice(0, 2) as Key, lastUci.slice(2, 4) as Key] : undefined}
-        check={check}
-        movable={{
-          free: false,
-          color: canMove ? player : undefined,
-          dests: canMove ? fenToDests(fen) : new Map(),
-          showDests: true,
-          events: {
-            after: (orig: Key, dest: Key) => {
-              if (isPromotionMove(fen, orig, dest)) setPromo({ from: orig, to: dest });
-              else move(orig + dest);
-            },
-          },
-        }}
-        premovable={{ enabled: false }}
-        drawable={{ autoShapes: shapes }}
+    <div className="board-card puzzle-board-card play-board-card" ref={cardRef}>
+      <BoardPlayerBar
+        side={topSide}
+        isTop={true}
+        name={topName}
+        elo={topElo}
+        isActiveTurn={currentTurn === topSide && !game?.result}
+        isEngineThinking={topIsThinking}
+        captured={topCaptured}
+        capturedColor={topCapturedColor}
+        advantage={topAdvantage}
       />
-      {promo && (
-        <PromotionOverlay
-          dest={promo.to}
-          color={player}
-          onCancel={() => {
-            setPromo(null);
-            usePlayStore.setState((s) => ({ fens: [...s.fens] })); // redraw: put the pawn back
+      <div className="play-board-surface">
+        <Chessground
+          dimensionsRef={cardRef}
+          orientation={orientation}
+          fen={fen}
+          turnColor={currentTurn}
+          lastMove={lastUci ? [lastUci.slice(0, 2) as Key, lastUci.slice(2, 4) as Key] : undefined}
+          check={check}
+          movable={{
+            free: false,
+            color: canMove ? player : undefined,
+            dests: canMove ? fenToDests(fen) : new Map(),
+            showDests: true,
+            events: {
+              after: (orig: Key, dest: Key) => {
+                if (isPromotionMove(fen, orig, dest)) setPromo({ from: orig, to: dest });
+                else move(orig + dest);
+              },
+            },
           }}
-          onPick={(role) => {
-            const { from, to } = promo;
-            setPromo(null);
-            move(from + to + PROMO_LETTER[role]);
-          }}
+          premovable={{ enabled: false }}
+          drawable={{ autoShapes: shapes }}
         />
-      )}
+        {promo && (
+          <PromotionOverlay
+            dest={promo.to}
+            color={player}
+            onCancel={() => {
+              setPromo(null);
+              usePlayStore.setState((s) => ({ fens: [...s.fens] })); // redraw: put the pawn back
+            }}
+            onPick={(role) => {
+              const { from, to } = promo;
+              setPromo(null);
+              move(from + to + PROMO_LETTER[role]);
+            }}
+          />
+        )}
+      </div>
+      <BoardPlayerBar
+        side={bottomSide}
+        isTop={false}
+        name={bottomName}
+        elo={bottomElo}
+        isActiveTurn={currentTurn === bottomSide && !game?.result}
+        isEngineThinking={bottomIsThinking}
+        captured={bottomCaptured}
+        capturedColor={bottomCapturedColor}
+        advantage={bottomAdvantage}
+      />
     </div>
   );
 }
@@ -581,6 +703,8 @@ function MovesPanel() {
   const listRef = useRef<HTMLOListElement>(null);
   const last = fens.length - 1;
   const current = viewPly ?? last;
+  const currentFen = fens[current];
+  const material = useMemo(() => (currentFen ? calculateMaterial(currentFen) : null), [currentFen]);
 
   useEffect(() => {
     listRef.current?.querySelector('.is-current')?.scrollIntoView({ block: 'nearest' });
@@ -651,6 +775,14 @@ function MovesPanel() {
             <div className="play-col-banner is-white">
               <span className="play-color-dot is-white" />
               <span className="play-banner-title">WHITE</span>
+              {material && (
+                <CapturedPieces
+                  pieces={material.capturedByWhite}
+                  pieceColor="black"
+                  advantage={material.diff}
+                  compact
+                />
+              )}
               {game && (
                 <span className={`play-role-pill ${player === 'white' ? 'is-user' : 'is-bot'}`}>
                   {player === 'white' ? 'You' : 'Bot'}
@@ -660,6 +792,14 @@ function MovesPanel() {
             <div className="play-col-banner is-black">
               <span className="play-color-dot is-black" />
               <span className="play-banner-title">BLACK</span>
+              {material && (
+                <CapturedPieces
+                  pieces={material.capturedByBlack}
+                  pieceColor="white"
+                  advantage={-material.diff}
+                  compact
+                />
+              )}
               {game && (
                 <span className={`play-role-pill ${player === 'black' ? 'is-user' : 'is-bot'}`}>
                   {player === 'black' ? 'You' : 'Bot'}

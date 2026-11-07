@@ -29,7 +29,7 @@
 import { createReadStream, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { parseFen } from 'chessops/fen';
@@ -88,6 +88,89 @@ function hash(id) {
   return h >>> 0;
 }
 
+// RFC 8878 frame parser to find frame boundaries and strip skippable frames
+// (0x184D2A50 - 0x184D2A5F) which Lichess inserts between chunked zstd frames,
+// and which Node's zlib decompressor would otherwise reject with 'Unknown frame descriptor'.
+class ZstdFrameFilter extends Transform {
+  constructor() {
+    super();
+    this.buffer = Buffer.alloc(0);
+  }
+
+  _transform(chunk, encoding, callback) {
+    this.buffer = Buffer.concat([this.buffer, chunk]);
+    this._process(callback);
+  }
+
+  _process(callback) {
+    while (this.buffer.length >= 4) {
+      const magic = this.buffer.readUInt32LE(0);
+
+      // Skippable frame: 0x184D2A50 - 0x184D2A5F
+      if (magic >= 0x184D2A50 && magic <= 0x184D2A5F) {
+        if (this.buffer.length < 8) return callback();
+        const frameSize = this.buffer.readUInt32LE(4);
+        const totalSize = 8 + frameSize;
+        if (this.buffer.length < totalSize) return callback();
+        // Drop the skippable frame
+        this.buffer = this.buffer.subarray(totalSize);
+        continue;
+      }
+
+      // Standard Zstandard frame: 0xFD2FB528
+      if (magic === 0xFD2FB528) {
+        if (this.buffer.length < 5) return callback();
+        let offset = 4;
+        const descriptor = this.buffer[offset++];
+        const fcsFlag = (descriptor >> 6) & 3;
+        const singleSegment = (descriptor >> 5) & 1;
+        const contentChecksum = (descriptor >> 2) & 1;
+        const dictIdFlag = descriptor & 3;
+
+        if (!singleSegment) offset += 1; // window descriptor
+        offset += dictIdFlag === 0 ? 0 : dictIdFlag === 1 ? 1 : dictIdFlag === 2 ? 2 : 4;
+        const fcsSize = fcsFlag === 0 ? (singleSegment ? 1 : 0) : fcsFlag === 1 ? 2 : fcsFlag === 2 ? 4 : 8;
+        offset += fcsSize;
+
+        if (this.buffer.length < offset) return callback();
+
+        let isLast = false;
+        while (!isLast) {
+          if (this.buffer.length < offset + 3) return callback();
+          const b0 = this.buffer[offset];
+          const b1 = this.buffer[offset + 1];
+          const b2 = this.buffer[offset + 2];
+          offset += 3;
+          const header = b0 | (b1 << 8) | (b2 << 16);
+          isLast = (header & 1) === 1;
+          const blockType = (header >> 1) & 3;
+          const blockSize = header >> 3;
+
+          const dataSize = blockType === 1 ? 1 : blockSize;
+          offset += dataSize;
+        }
+
+        if (contentChecksum) offset += 4;
+        if (this.buffer.length < offset) return callback();
+
+        this.push(this.buffer.subarray(0, offset));
+        this.buffer = this.buffer.subarray(offset);
+        continue;
+      }
+
+      return callback(new Error(`Unknown zstd magic: 0x${magic.toString(16)}`));
+    }
+    callback();
+  }
+
+  _flush(callback) {
+    if (this.buffer.length > 0) {
+      this.push(this.buffer);
+    }
+    callback();
+  }
+}
+
 async function openInput(opts) {
   let stream;
   let name;
@@ -111,7 +194,9 @@ async function openInput(opts) {
           '          (Mac: brew install zstd), rồi chạy với --file lichess_db_puzzle.csv',
       );
     }
-    stream = stream.pipe(zlib.createZstdDecompress());
+    const decompress = zlib.createZstdDecompress();
+    decompress.on('error', (err) => fail(`Lỗi giải nén zstd: ${err.message}`));
+    stream = stream.pipe(new ZstdFrameFilter()).pipe(decompress);
   }
   return stream;
 }
@@ -168,12 +253,14 @@ async function main() {
     total++;
     if (total % 500000 === 0) console.log(`  đã đọc ${total.toLocaleString()} bài, giữ ${eligible.toLocaleString()} bài đạt chuẩn`);
     const f = line.split(',');
+    if (f.length < 8) continue;
     const rating = Number(f[3]);
-    if (rating < opts.min || rating > opts.max) continue;
+    if (!Number.isFinite(rating) || rating < opts.min || rating > opts.max) continue;
     if (Number(f[4]) > opts.maxRd || Number(f[5]) < opts.minPop || Number(f[6]) < opts.minPlays) continue;
     eligible++;
-    const band = Math.min(bands - 1, Math.floor((rating - bandLow) / 100));
+    const band = Math.min(bands - 1, Math.max(0, Math.floor((rating - bandLow) / 100)));
     const list = keep[band];
+    if (!list) continue;
     list.push({ h: hash(f[0]), id: f[0], fen: f[1], moves: f[2], rating, themes: f[7] });
     if (list.length > perBand * 4) trim(list);
   }
