@@ -8,6 +8,7 @@ import { useRoute } from './util/route';
 // Loaded on first visit to the tab, so the openings page doesn't pay for it.
 const PuzzlePage = lazy(() => import('./puzzles/PuzzlePage'));
 const PlayPage = lazy(() => import('./play/PlayPage'));
+const MistakesPage = lazy(() => import('./mistakes/MistakesPage'));
 
 const App: React.FC = () => {
   // Session + repertoire bootstrap runs once for the whole app (it also
@@ -24,6 +25,10 @@ const App: React.FC = () => {
       ) : page === 'play' ? (
         <Suspense fallback={null}>
           <PlayPage />
+        </Suspense>
+      ) : page === 'mistakes' ? (
+        <Suspense fallback={null}>
+          <MistakesPage />
         </Suspense>
       ) : (
         <Chesspractice />

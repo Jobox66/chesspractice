@@ -55,7 +55,7 @@ export function evalText(e: { cp: number | null; mate: number | null }, pov: Col
 }
 
 // Terminal positions have no search; score them directly.
-function terminalEval(fen: string): { cp: number | null; mate: number | null } | null {
+export function terminalEval(fen: string): { cp: number | null; mate: number | null } | null {
   const pos = Chess.fromSetup(parseFen(fen).unwrap()).unwrap();
   // Already mated: a fractional mate score marks "mate on the board" and still
   // gives winPct 0 / 100 to the right side.
@@ -129,7 +129,7 @@ export function reviewMoves(moves: string[], fens: string[], a: Analysis): MoveR
 }
 
 // e1g1 vs e1h1 etc.: compare on squares + promotion, castling either form.
-function sameMove(a: string, b: string): boolean {
+export function sameMove(a: string, b: string): boolean {
   if (a === b) return true;
   const castle: Record<string, string> = { e1h1: 'e1g1', e1a1: 'e1c1', e8h8: 'e8g8', e8a8: 'e8c8' };
   return (castle[a] ?? a) === (castle[b] ?? b);

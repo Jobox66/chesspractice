@@ -1,0 +1,67 @@
+/* Mistakes trainer: the puzzle page's grid and panels (PuzzlePage.css) and
+   the play page's judgment colours; only its own bits live here. */
+
+.mistakes-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-gray-900);
+}
+
+.mistakes-total .puzzle-muted {
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.mistakes-counts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.mistakes-counts div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.375rem 0.25rem;
+  border-radius: 0.375rem;
+  background: var(--c-recessed);
+}
+
+.mistakes-counts dt {
+  font-size: 0.6875rem;
+  color: var(--c-gray-500);
+}
+
+.mistakes-counts dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-gray-900);
+}
+
+.mistakes-list li.is-current button {
+  background: var(--c-recessed);
+}
+
+/* Status as a word; colour only reinforces it. */
+.mistakes-status {
+  min-width: 4.25rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: var(--c-recessed);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--c-gray-600);
+}
+
+.mistakes-status.is-due {
+  color: var(--c-brand-blue);
+}
+
+.mistakes-status.is-learned {
+  color: var(--c-emerald-600);
+}

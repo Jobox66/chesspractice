@@ -18,11 +18,12 @@ const (
 	maxDrillDuration = 60 * 60 * 1000 // an hour; longer means the tab sat open
 )
 
-// Lichess puzzle ids are 5 alphanumerics; endgame ids are our own slugs.
+// Lichess puzzle ids are 5 alphanumerics; endgame ids are our own slugs;
+// mistake ids are "<gameId>-<ply>".
 var drillItemID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,32}$`)
 
 // GetDrillState returns the caller's rating, progress and recent attempts
-// for one drill kind ("puzzle" or "endgame").
+// for one drill kind ("puzzle", "endgame" or "mistake").
 func GetDrillState(db store.Repo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		kind := r.PathValue("kind")

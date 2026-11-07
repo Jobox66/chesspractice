@@ -6,18 +6,21 @@ import (
 )
 
 // Drills are the practice modes outside the opening repertoire: tactics
-// puzzles and (later) endgame positions. The items themselves ship with
-// the frontend as static data; the server only keeps each user's progress.
+// puzzles, (later) endgame positions, and the user's own mistakes from
+// analysed games. Puzzle and endgame items ship with the frontend as static
+// data; mistake items are derived on the client from the saved games. The
+// server only keeps each user's progress.
 // Scheduling (FSRS) and rating maths run on the client, like the
 // repertoire's training cards — the server stores what it is sent.
 const (
 	DrillKindPuzzle  = "puzzle"
 	DrillKindEndgame = "endgame"
+	DrillKindMistake = "mistake"
 )
 
 // IsDrillKind reports whether kind is one the server accepts.
 func IsDrillKind(kind string) bool {
-	return kind == DrillKindPuzzle || kind == DrillKindEndgame
+	return kind == DrillKindPuzzle || kind == DrillKindEndgame || kind == DrillKindMistake
 }
 
 // DrillRating is a user's Glicko rating for one drill kind.

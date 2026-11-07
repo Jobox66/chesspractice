@@ -9,6 +9,7 @@ const PAGES: { page: Page; label: string }[] = [
   { page: 'openings', label: 'Openings' },
   { page: 'puzzles', label: 'Puzzles' },
   { page: 'play', label: 'Play' },
+  { page: 'mistakes', label: 'Mistakes' },
 ];
 
 interface Props {
