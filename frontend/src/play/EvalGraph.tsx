@@ -50,16 +50,10 @@ export function EvalGraph(props: {
         <line x1={0} x2={W} y1={H / 2} y2={H / 2} className="eval-graph-mid" vectorEffect="non-scaling-stroke" />
         <path d={line} className="eval-graph-contour" vectorEffect="non-scaling-stroke" />
       </svg>
-      <div className="eval-graph-badge is-top" title="Top: White advantage">
-        <span className="eval-graph-dot is-white" />
-        <span>+ White</span>
-      </div>
-      <div className="eval-graph-badge is-mid">
-        <span>=</span>
-      </div>
-      <div className="eval-graph-badge is-bottom" title="Bottom: Black advantage">
-        <span className="eval-graph-dot is-black" />
-        <span>+ Black</span>
+      <div className="eval-graph-labels" aria-hidden="true">
+        <span className="eval-graph-axis is-top" title="White advantage">+W</span>
+        <span className="eval-graph-axis is-mid" title="Equal">=</span >
+        <span className="eval-graph-axis is-bottom" title="Black advantage">+B</span>
       </div>
       <span className="eval-graph-cursor" style={{ left: pct(current) }} />
       {marks.map((m) => (
