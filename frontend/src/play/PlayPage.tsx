@@ -601,6 +601,7 @@ function MovesPanel() {
         onClick={() => setViewPly(ply)}
         title={j ? JUDGMENT_LABEL[j] : undefined}
       >
+        <span className={`play-move-pip is-${side}`} />
         <span className="play-move-san">{san}</span>
         {j && <span className={`play-judgment is-${j}`}>{JUDGMENT_SYMBOL[j]}</span>}
       </button>
@@ -647,24 +648,24 @@ function MovesPanel() {
         <>
           <div className="play-moves-col-header">
             <span className="play-col-no">#</span>
-            <span className="play-col-title is-white">
+            <div className="play-col-banner is-white">
               <span className="play-color-dot is-white" />
-              <span>White</span>
+              <span className="play-banner-title">WHITE</span>
               {game && (
-                <span className={`play-role-tag ${player === 'white' ? 'is-user' : 'is-bot'}`}>
+                <span className={`play-role-pill ${player === 'white' ? 'is-user' : 'is-bot'}`}>
                   {player === 'white' ? 'You' : 'Bot'}
                 </span>
               )}
-            </span>
-            <span className="play-col-title is-black">
+            </div>
+            <div className="play-col-banner is-black">
               <span className="play-color-dot is-black" />
-              <span>Black</span>
+              <span className="play-banner-title">BLACK</span>
               {game && (
-                <span className={`play-role-tag ${player === 'black' ? 'is-user' : 'is-bot'}`}>
+                <span className={`play-role-pill ${player === 'black' ? 'is-user' : 'is-bot'}`}>
                   {player === 'black' ? 'You' : 'Bot'}
                 </span>
               )}
-            </span>
+            </div>
           </div>
           <ol className="play-moves" ref={listRef}>
             {rows.map(([n, w, b]) => (
@@ -699,50 +700,66 @@ function MovesPanel() {
 }
 
 function AnalysisSummary({ reviews, player }: { reviews: MoveReview[]; player: Color }) {
-  const rows = [
-    {
-      who: player === 'white' ? 'You' : 'Stockfish',
-      color: 'white' as Color,
-      isUser: player === 'white',
-      acc: accuracy(reviews, 'white'),
-      c: judgmentCounts(reviews, 'white'),
-    },
-    {
-      who: player === 'black' ? 'You' : 'Stockfish',
-      color: 'black' as Color,
-      isUser: player === 'black',
-      acc: accuracy(reviews, 'black'),
-      c: judgmentCounts(reviews, 'black'),
-    },
-  ];
+  const whitePlayer = player === 'white' ? 'You' : 'Stockfish';
+  const blackPlayer = player === 'black' ? 'You' : 'Stockfish';
+  const whiteAcc = accuracy(reviews, 'white');
+  const blackAcc = accuracy(reviews, 'black');
+  const whiteJudgments = judgmentCounts(reviews, 'white');
+  const blackJudgments = judgmentCounts(reviews, 'black');
+
   return (
-    <table className="play-summary">
-      <thead>
-        <tr>
-          <th className="play-summary-th-player">Player</th>
-          <th>Accuracy</th>
-          <th title="Inaccuracies">?!</th>
-          <th title="Mistakes">?</th>
-          <th title="Blunders">??</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.color}>
-            <th scope="row" className="play-summary-who">
-              <span className={`play-color-dot is-${r.color}`} />
-              <span className="play-player-name">{r.who}</span>
-              <span className={`play-side-badge is-${r.color}`}>
-                {r.color === 'white' ? 'White' : 'Black'}
-              </span>
-            </th>
-            <td className="play-summary-acc">{r.acc != null ? `${r.acc}%` : '–'}</td>
-            <td>{r.c.inaccuracy}</td>
-            <td>{r.c.mistake}</td>
-            <td>{r.c.blunder}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="play-review-cards">
+      {/* White Player Zone */}
+      <div className="play-review-card is-white">
+        <div className="play-card-header">
+          <span className="play-color-dot is-white" />
+          <span className="play-card-role">WHITE</span>
+          <span className={`play-card-tag ${player === 'white' ? 'is-user' : 'is-bot'}`}>
+            {whitePlayer}
+          </span>
+        </div>
+        <div className="play-card-acc">
+          <span className="play-card-acc-num">{whiteAcc != null ? `${whiteAcc}%` : '–'}</span>
+          <span className="play-card-acc-label">Accuracy</span>
+        </div>
+        <div className="play-card-judgments">
+          <span className="play-card-j is-inaccuracy" title="Inaccuracies">
+            <span className="play-j-sym">?!</span> {whiteJudgments.inaccuracy}
+          </span>
+          <span className="play-card-j is-mistake" title="Mistakes">
+            <span className="play-j-sym">?</span> {whiteJudgments.mistake}
+          </span>
+          <span className="play-card-j is-blunder" title="Blunders">
+            <span className="play-j-sym">??</span> {whiteJudgments.blunder}
+          </span>
+        </div>
+      </div>
+
+      {/* Black Player Zone */}
+      <div className="play-review-card is-black">
+        <div className="play-card-header">
+          <span className="play-color-dot is-black" />
+          <span className="play-card-role">BLACK</span>
+          <span className={`play-card-tag ${player === 'black' ? 'is-user' : 'is-bot'}`}>
+            {blackPlayer}
+          </span>
+        </div>
+        <div className="play-card-acc">
+          <span className="play-card-acc-num">{blackAcc != null ? `${blackAcc}%` : '–'}</span>
+          <span className="play-card-acc-label">Accuracy</span>
+        </div>
+        <div className="play-card-judgments">
+          <span className="play-card-j is-inaccuracy" title="Inaccuracies">
+            <span className="play-j-sym">?!</span> {blackJudgments.inaccuracy}
+          </span>
+          <span className="play-card-j is-mistake" title="Mistakes">
+            <span className="play-j-sym">?</span> {blackJudgments.mistake}
+          </span>
+          <span className="play-card-j is-blunder" title="Blunders">
+            <span className="play-j-sym">??</span> {blackJudgments.blunder}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }

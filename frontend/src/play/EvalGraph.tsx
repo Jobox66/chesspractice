@@ -45,17 +45,21 @@ export function EvalGraph(props: {
       aria-label="Evaluation graph: White's winning chances move by move"
     >
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="eval-graph-svg">
-        <path d={area} className="eval-graph-area" />
+        <rect width={W} height={H} className="eval-graph-black-bg" />
+        <path d={area} className="eval-graph-white-area" />
         <line x1={0} x2={W} y1={H / 2} y2={H / 2} className="eval-graph-mid" vectorEffect="non-scaling-stroke" />
-        <path d={line} className="eval-graph-line" vectorEffect="non-scaling-stroke" />
+        <path d={line} className="eval-graph-contour" vectorEffect="non-scaling-stroke" />
       </svg>
-      <div className="eval-graph-side-tag is-top" title="Top area: White advantage">
-        <span className="play-color-dot is-white" />
-        <span>White</span>
+      <div className="eval-graph-badge is-top" title="Top: White advantage">
+        <span className="eval-graph-dot is-white" />
+        <span>+ White</span>
       </div>
-      <div className="eval-graph-side-tag is-bottom" title="Bottom area: Black advantage">
-        <span className="play-color-dot is-black" />
-        <span>Black</span>
+      <div className="eval-graph-badge is-mid">
+        <span>=</span>
+      </div>
+      <div className="eval-graph-badge is-bottom" title="Bottom: Black advantage">
+        <span className="eval-graph-dot is-black" />
+        <span>+ Black</span>
       </div>
       <span className="eval-graph-cursor" style={{ left: pct(current) }} />
       {marks.map((m) => (
