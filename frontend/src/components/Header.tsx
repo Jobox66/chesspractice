@@ -1,15 +1,29 @@
-import { SiGithub } from 'react-icons/si';
-import { LogIn, LogOut, Moon, Sun, User } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  BookOpen,
+  ChevronDown,
+  LogIn,
+  LogOut,
+  Menu,
+  Moon,
+  Puzzle,
+  Sun,
+  Swords,
+  Target,
+  User,
+  X,
+} from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { useThemeStore } from '../store/theme';
 import { useTrainerStore, type Peer } from '../store/state';
-import { navigate, useRoute, type Page } from '../util/route';
+import { navigate, setMenuOpen, useRoute, type Page } from '../util/route';
 
-const PAGES: { page: Page; label: string }[] = [
-  { page: 'openings', label: 'Openings' },
-  { page: 'puzzles', label: 'Puzzles' },
-  { page: 'play', label: 'Play' },
-  { page: 'mistakes', label: 'Mistakes' },
+const PAGES: { page: Page; label: string; icon: ReactNode }[] = [
+  { page: 'openings', label: 'Openings', icon: <BookOpen /> },
+  { page: 'puzzles', label: 'Puzzles', icon: <Puzzle /> },
+  { page: 'play', label: 'Play', icon: <Swords /> },
+  { page: 'mistakes', label: 'Mistakes', icon: <Target /> },
 ];
 
 interface Props {
@@ -17,9 +31,12 @@ interface Props {
   // on Chesspractice; Login omits this.
   connectedUsers?: Peer[];
   incomingCollaboratorsCount?: number;
+  // A page's side panels, shown in the menu under the page list (the
+  // openings page puts its repertoire there on narrow screens).
+  drawerExtra?: ReactNode;
 }
 
-export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props) {
+export function Header({ connectedUsers, incomingCollaboratorsCount = 0, drawerExtra }: Props) {
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const isDark = theme === 'dark';
@@ -30,31 +47,31 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
   const showLogin = useAuthStore((s) => s.showLogin);
 
   const page = useRoute((s) => s.page);
+  const menuOpen = useRoute((s) => s.menuOpen);
+  const current = PAGES.find((p) => p.page === page) ?? PAGES[0];
   const peers = connectedUsers?.filter((u) => u.username !== authUser?.username) ?? [];
   const showSignIn = !showLogin;
 
   return (
     <div id="header">
+      {/* Page menu: collapsed to the current page's name; opens a list of
+          pages on the left, and on narrow screens the page's side panels. */}
+      <button
+        type="button"
+        className={`header-menu-btn ${menuOpen ? 'is-open' : ''}`}
+        aria-expanded={menuOpen}
+        aria-controls="nav-drawer"
+        onClick={() => setMenuOpen(!menuOpen)}
+      >
+        {menuOpen ? <X /> : <Menu />}
+        <span>{current.label}</span>
+        <ChevronDown className="header-menu-caret" />
+      </button>
+
       <div className="logo-wrap">
         <span>chess</span>
         <span className="accent">practice</span>
       </div>
-
-      {/* Which practice mode: same recessed track + raised chip as the
-          board's Edit/Learn/Recall control. */}
-      <nav className="header-nav" aria-label="Practice mode">
-        {PAGES.map(({ page: p, label }) => (
-          <button
-            key={p}
-            type="button"
-            className={`header-nav-btn ${page === p ? 'is-active' : ''}`}
-            aria-current={page === p ? 'page' : undefined}
-            onClick={() => navigate(p)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
 
       {/* Identity sits next to the wordmark; the links are pushed right. Who
           you are and the control that changes it live in one recessed track,
@@ -147,18 +164,34 @@ export function Header({ connectedUsers, incomingCollaboratorsCount = 0 }: Props
           <span>{isDark ? 'light mode' : 'dark mode'}</span>
           {isDark ? <Sun /> : <Moon />}
         </button>
-
-        <a
-          href="https://github.com/Jobox66/chesspractice"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="View on GitHub"
-          className="header-link header-github"
-        >
-          <span>view github</span>
-          <SiGithub />
-        </a>
       </div>
+
+      {/* Portalled: #header is a size container, which would trap and clip
+          a fixed-position child. */}
+      {menuOpen &&
+        createPortal(
+          <>
+            <div className="nav-backdrop" onClick={() => setMenuOpen(false)} />
+            <aside id="nav-drawer" className={`nav-drawer ${drawerExtra ? 'has-extra' : ''}`}>
+              <nav className="nav-list" aria-label="Practice mode">
+                {PAGES.map(({ page: p, label, icon }) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`nav-item ${page === p ? 'is-active' : ''}`}
+                    aria-current={page === p ? 'page' : undefined}
+                    onClick={() => navigate(p)}
+                  >
+                    {icon}
+                    {label}
+                  </button>
+                ))}
+              </nav>
+              {drawerExtra && <div className="nav-extra">{drawerExtra}</div>}
+            </aside>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }

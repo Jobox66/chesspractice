@@ -146,6 +146,26 @@ export function nextTrainable(
   return null;
 }
 
+// Moves falling due on each of the next `days` calendar days (index 0 =
+// today, which also takes everything overdue), across all chapters.
+export function dueByDay(chapters: Chapter[], key: string | null, days: number): number[] {
+  const counts = new Array<number>(days).fill(0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (const chapter of chapters) {
+    forEachNode(chapter.root, (n) => {
+      if (!n.data.enabled) return;
+      const card = cardOf(n.data, key);
+      if (!card) return;
+      const due = new Date(dueAt(card));
+      due.setHours(0, 0, 0, 0);
+      const day = Math.max(0, Math.round((due.getTime() - today.getTime()) / 86_400_000));
+      if (day < days) counts[day]++;
+    });
+  }
+  return counts;
+}
+
 // Time until the next card of this chapter falls due (ms), or null.
 export function nextDueIn(chapter: Chapter, key: string | null): number | null {
   let best: number | null = null;

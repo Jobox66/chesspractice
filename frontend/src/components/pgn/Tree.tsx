@@ -587,6 +587,13 @@ export default function PgnTree({ setActiveMoveId, showComments = true }) {
               nodes={visibleChildren(root)}
               args={{ parentPath: '', parentNode: root, isMainline: true }}
             />
+            {visibleChildren(root).length === 0 && (
+              <p className="tree-empty">
+                {trainingMethod === 'edit'
+                  ? 'No moves yet. Play one on the board to start the chapter.'
+                  : 'Moves appear here as you learn them.'}
+              </p>
+            )}
           </div>
           <BottomCommentEditor />
           <ChildMoveButtons />

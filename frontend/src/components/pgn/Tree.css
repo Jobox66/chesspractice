@@ -289,3 +289,13 @@
   border-color: var(--c-brand-blue);
   color: var(--c-info-accent);
 }
+
+/* Nothing on the line yet (a fresh chapter, or Learn before the first
+   move): say so instead of showing an empty panel. */
+.tree-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 1rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--c-gray-500);
+}

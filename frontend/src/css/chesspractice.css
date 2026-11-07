@@ -213,3 +213,17 @@
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
+
+/* A narrow chapter panel keeps its title whole and drops the button labels
+   (icons + tooltips remain), instead of wrapping "copy fen" onto two lines. */
+.pgn-card {
+  container-type: inline-size;
+  container-name: pgn-card;
+}
+
+@container pgn-card (max-width: 460px) {
+  .copy-fen-btn span,
+  .toggle-comments-btn span {
+    display: none;
+  }
+}

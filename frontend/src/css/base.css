@@ -150,7 +150,7 @@
   /* Due-count heatmap, empty day -> busiest day in the window. Its own scale
      rather than the blue ramp above: it has to stay legible as five distinct
      steps, which the ramp's spacing doesn't give. */
-  --c-heat-0: #dfdfdf;
+  --c-heat-0: #ebedf0;
   --c-heat-1: #c9deff;
   --c-heat-2: #91bbff;
   --c-heat-3: #6991ff;
