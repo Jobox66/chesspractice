@@ -453,7 +453,19 @@ function SetupPanel() {
               className={`puzzle-seg-btn ${settings.color === c ? 'is-active' : ''}`}
               onClick={() => updateSettings({ color: c })}
             >
-              {c === 'white' ? 'White' : c === 'black' ? 'Black' : 'Random'}
+              {c === 'white' ? (
+                <span className="play-seg-label">
+                  <span className="play-color-dot is-white" />
+                  <span>White</span>
+                </span>
+              ) : c === 'black' ? (
+                <span className="play-seg-label">
+                  <span className="play-color-dot is-black" />
+                  <span>Black</span>
+                </span>
+              ) : (
+                'Random'
+              )}
             </button>
           ))}
         </div>
@@ -540,6 +552,7 @@ function HistoryRow(props: {
       <button type="button" className="play-history-open" onClick={onOpen} title="Review this game">
         <span className={`play-outcome is-${outcome === 'W' ? 'win' : outcome === 'L' ? 'loss' : 'draw'}`}>{outcome}</span>
         <span className="play-history-main">
+          <span className={`play-color-dot is-${game.playerColor}`} />
           {game.playerColor === 'white' ? 'White' : 'Black'} vs {eloLabel(game.elo)}
           <span className="puzzle-muted">
             {' '}
@@ -576,17 +589,19 @@ function MovesPanel() {
   const rows: [number, string, string | undefined][] = [];
   for (let i = 0; i < sans.length; i += 2) rows.push([i / 2 + 1, sans[i], sans[i + 1]]);
 
-  const cell = (san: string | undefined, ply: number) => {
-    if (!san) return <span />;
+  const player: Color = game?.playerColor ?? 'white';
+
+  const cell = (san: string | undefined, ply: number, side: 'white' | 'black') => {
+    if (!san) return <span className="play-move-empty" />;
     const j = reviews?.[ply - 1]?.judgment;
     return (
       <button
         type="button"
-        className={`play-move ${current === ply ? 'is-current' : ''}`}
+        className={`play-move is-${side} ${current === ply ? 'is-current' : ''}`}
         onClick={() => setViewPly(ply)}
         title={j ? JUDGMENT_LABEL[j] : undefined}
       >
-        {san}
+        <span className="play-move-san">{san}</span>
         {j && <span className={`play-judgment is-${j}`}>{JUDGMENT_SYMBOL[j]}</span>}
       </button>
     );
@@ -629,15 +644,38 @@ function MovesPanel() {
       {sans.length === 0 ? (
         <span className="puzzle-muted">No moves yet.</span>
       ) : (
-        <ol className="play-moves" ref={listRef}>
-          {rows.map(([n, w, b]) => (
-            <li key={n}>
-              <span className="play-move-no">{n}.</span>
-              {cell(w, n * 2 - 1)}
-              {cell(b, n * 2)}
-            </li>
-          ))}
-        </ol>
+        <>
+          <div className="play-moves-col-header">
+            <span className="play-col-no">#</span>
+            <span className="play-col-title is-white">
+              <span className="play-color-dot is-white" />
+              <span>White</span>
+              {game && (
+                <span className={`play-role-tag ${player === 'white' ? 'is-user' : 'is-bot'}`}>
+                  {player === 'white' ? 'You' : 'Bot'}
+                </span>
+              )}
+            </span>
+            <span className="play-col-title is-black">
+              <span className="play-color-dot is-black" />
+              <span>Black</span>
+              {game && (
+                <span className={`play-role-tag ${player === 'black' ? 'is-user' : 'is-bot'}`}>
+                  {player === 'black' ? 'You' : 'Bot'}
+                </span>
+              )}
+            </span>
+          </div>
+          <ol className="play-moves" ref={listRef}>
+            {rows.map(([n, w, b]) => (
+              <li key={n}>
+                <span className="play-move-no">{n}.</span>
+                {cell(w, n * 2 - 1, 'white')}
+                {cell(b, n * 2, 'black')}
+              </li>
+            ))}
+          </ol>
+        </>
       )}
       <div className="play-nav">
         <button type="button" onClick={() => setViewPly(0)} disabled={current === 0} aria-label="First move">
@@ -661,16 +699,27 @@ function MovesPanel() {
 }
 
 function AnalysisSummary({ reviews, player }: { reviews: MoveReview[]; player: Color }) {
-  const engine: Color = player === 'white' ? 'black' : 'white';
   const rows = [
-    { who: 'You', acc: accuracy(reviews, player), c: judgmentCounts(reviews, player) },
-    { who: 'Stockfish', acc: accuracy(reviews, engine), c: judgmentCounts(reviews, engine) },
+    {
+      who: player === 'white' ? 'You' : 'Stockfish',
+      color: 'white' as Color,
+      isUser: player === 'white',
+      acc: accuracy(reviews, 'white'),
+      c: judgmentCounts(reviews, 'white'),
+    },
+    {
+      who: player === 'black' ? 'You' : 'Stockfish',
+      color: 'black' as Color,
+      isUser: player === 'black',
+      acc: accuracy(reviews, 'black'),
+      c: judgmentCounts(reviews, 'black'),
+    },
   ];
   return (
     <table className="play-summary">
       <thead>
         <tr>
-          <th />
+          <th className="play-summary-th-player">Player</th>
           <th>Accuracy</th>
           <th title="Inaccuracies">?!</th>
           <th title="Mistakes">?</th>
@@ -679,9 +728,15 @@ function AnalysisSummary({ reviews, player }: { reviews: MoveReview[]; player: C
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.who}>
-            <th scope="row">{r.who}</th>
-            <td>{r.acc != null ? `${r.acc}%` : '–'}</td>
+          <tr key={r.color}>
+            <th scope="row" className="play-summary-who">
+              <span className={`play-color-dot is-${r.color}`} />
+              <span className="play-player-name">{r.who}</span>
+              <span className={`play-side-badge is-${r.color}`}>
+                {r.color === 'white' ? 'White' : 'Black'}
+              </span>
+            </th>
+            <td className="play-summary-acc">{r.acc != null ? `${r.acc}%` : '–'}</td>
             <td>{r.c.inaccuracy}</td>
             <td>{r.c.mistake}</td>
             <td>{r.c.blunder}</td>

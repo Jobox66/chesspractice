@@ -49,6 +49,14 @@ export function EvalGraph(props: {
         <line x1={0} x2={W} y1={H / 2} y2={H / 2} className="eval-graph-mid" vectorEffect="non-scaling-stroke" />
         <path d={line} className="eval-graph-line" vectorEffect="non-scaling-stroke" />
       </svg>
+      <div className="eval-graph-side-tag is-top" title="Top area: White advantage">
+        <span className="play-color-dot is-white" />
+        <span>White</span>
+      </div>
+      <div className="eval-graph-side-tag is-bottom" title="Bottom area: Black advantage">
+        <span className="play-color-dot is-black" />
+        <span>Black</span>
+      </div>
       <span className="eval-graph-cursor" style={{ left: pct(current) }} />
       {marks.map((m) => (
         <span
