@@ -153,3 +153,60 @@ export function scoreText(cp: number | null, mate: number | null, fen: string, p
   const v = (cp * sign) / 100;
   return v > 0 ? `+${v.toFixed(1)}` : v < 0 ? `−${Math.abs(v).toFixed(1)}` : '0.0';
 }
+
+export type PieceRole = 'p' | 'n' | 'b' | 'r' | 'q';
+
+export interface MaterialInfo {
+  whiteScore: number;
+  blackScore: number;
+  diff: number; // > 0: White ahead, < 0: Black ahead
+  capturedByWhite: PieceRole[]; // Black pieces captured by White
+  capturedByBlack: PieceRole[]; // White pieces captured by Black
+}
+
+const STARTING_COUNT: Record<PieceRole, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+const PIECE_ROLES: PieceRole[] = ['p', 'n', 'b', 'r', 'q'];
+
+export function calculateMaterial(fen: string): MaterialInfo {
+  const boardPart = fen.split(' ')[0];
+  const whiteOnBoard: Record<PieceRole, number> = { p: 0, n: 0, b: 0, r: 0, q: 0 };
+  const blackOnBoard: Record<PieceRole, number> = { p: 0, n: 0, b: 0, r: 0, q: 0 };
+
+  for (const ch of boardPart) {
+    if (ch === 'P') whiteOnBoard.p++;
+    else if (ch === 'N') whiteOnBoard.n++;
+    else if (ch === 'B') whiteOnBoard.b++;
+    else if (ch === 'R') whiteOnBoard.r++;
+    else if (ch === 'Q') whiteOnBoard.q++;
+    else if (ch === 'p') blackOnBoard.p++;
+    else if (ch === 'n') blackOnBoard.n++;
+    else if (ch === 'b') blackOnBoard.b++;
+    else if (ch === 'r') blackOnBoard.r++;
+    else if (ch === 'q') blackOnBoard.q++;
+  }
+
+  const whiteScore =
+    whiteOnBoard.p * 1 + whiteOnBoard.n * 3 + whiteOnBoard.b * 3 + whiteOnBoard.r * 5 + whiteOnBoard.q * 9;
+  const blackScore =
+    blackOnBoard.p * 1 + blackOnBoard.n * 3 + blackOnBoard.b * 3 + blackOnBoard.r * 5 + blackOnBoard.q * 9;
+  const diff = whiteScore - blackScore;
+
+  const capturedByWhite: PieceRole[] = [];
+  const capturedByBlack: PieceRole[] = [];
+
+  for (const role of PIECE_ROLES) {
+    const missingBlack = Math.max(0, STARTING_COUNT[role] - blackOnBoard[role]);
+    for (let i = 0; i < missingBlack; i++) capturedByWhite.push(role);
+
+    const missingWhite = Math.max(0, STARTING_COUNT[role] - whiteOnBoard[role]);
+    for (let i = 0; i < missingWhite; i++) capturedByBlack.push(role);
+  }
+
+  return {
+    whiteScore,
+    blackScore,
+    diff,
+    capturedByWhite,
+    capturedByBlack,
+  };
+}
