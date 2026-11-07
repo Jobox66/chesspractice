@@ -1,6 +1,6 @@
 //TODO better solution for syncing chessground state w/ react store state
 
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { Chessground } from './components/Chessground';
 import Controls from './components/TrainingControls';
 import MobileCommentPopout from './components/MobileCommentPopout';
@@ -16,6 +16,7 @@ import { Key, MoveMetadata } from 'chessground/types';
 import { useTrainerStore } from './store/state';
 import { UserTip } from './components/UserTip';
 import Schedule from './components/MemorySchedule';
+import TodayCard from './components/TodayCard';
 import AddToRepertoireModal from './components/modals/AddToRepertoireModal';
 import PgnControls from './components/pgn/TreeControls';
 import PgnTree from './components/pgn/Tree';
@@ -38,6 +39,7 @@ import {
 import SettingsModal from './components/modals/SettingsModal';
 import ShortcutsModal from './components/modals/ShortcutsModal';
 import { Header } from './components/Header';
+import { setMenuOpen } from './util/route';
 import { CollaboratorsPanel } from './components/collaborators/CollaboratorsPanel';
 import {
   addCollaborator as addCollaboratorService,
@@ -100,6 +102,8 @@ const pieSlices = (unseenRatio: number, dueRatio: number): React.CSSProperties =
     '--due-end': `${(unseenRatio + dueRatio) * 360}deg`,
   }) as React.CSSProperties;
 
+const WIDE_QUERY = '(min-width: 1024px)';
+
 //TODO better sound handling, separate sound for check?
 const SOUNDS = {
   move: new Audio('/sound/public_sound_standard_Move.mp3'),
@@ -146,6 +150,19 @@ export const Chesspractice = () => {
   useWebsocket();
 
   const [collaboratorsOpen, setCollaboratorsOpen] = useState(false);
+
+  // Three-column desktop (≥ 1024px, same breakpoint as layout.css) shows the
+  // sidebar; narrower screens keep it in the header's left menu.
+  const wide = useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(WIDE_QUERY);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(WIDE_QUERY).matches,
+  );
+  // Picking a chapter (or opening the add dialog) from the menu closes it.
+  useEffect(() => setMenuOpen(false), [selectedChapterId, showingAddToRepertoireMenu]);
   const [outgoingCollaborators, setOutgoingCollaborators] = useState<Collaborator[]>([]);
   const [incomingCollaborators, setIncomingCollaborators] = useState<Collaborator[]>([]);
 
@@ -471,12 +488,28 @@ export const Chesspractice = () => {
   );
   const shortcutsKey = useHotkeyStore((s) => s.bindings.openShortcuts);
 
+  const sidebar = (
+    <>
+      <div className="area-repertoire">
+        <Repertoire onOpenCollaborators={() => setCollaboratorsOpen(true)} />
+      </div>
+      <TodayCard />
+      <div className="area-schedule">
+        <Schedule />
+      </div>
+    </>
+  );
+
   //TODO dont try to calculate properties when we haven't initialized the repertoire yet
   return (
     <MantineProvider>
       {/* <Debug /> */}
       <div className="app-root">
-        <Header connectedUsers={connectedUsers} incomingCollaboratorsCount={incomingCollaborators.length} />
+        <Header
+          connectedUsers={connectedUsers}
+          incomingCollaboratorsCount={incomingCollaborators.length}
+          drawerExtra={wide ? undefined : sidebar}
+        />
 
         {showingAddToRepertoireMenu && (
           <>
@@ -694,16 +727,9 @@ export const Chesspractice = () => {
             </div>
           </div>
 
-          {/* SIDEBAR (repertoire + memory schedule) */}
-          <div className="area-sidebar">
-            <div className="area-repertoire">
-              <Repertoire onOpenCollaborators={() => setCollaboratorsOpen(true)} />
-            </div>
-
-            <div className="area-schedule">
-              <Schedule />
-            </div>
-          </div>
+          {/* SIDEBAR (repertoire + today + memory schedule); in the menu
+              when narrow */}
+          {wide && <div className="area-sidebar">{sidebar}</div>}
         </div>
       </div>
 

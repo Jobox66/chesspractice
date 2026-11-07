@@ -19,11 +19,17 @@ function pageFromPath(path: string): Page {
   return 'openings';
 }
 
-export const useRoute = create<{ page: Page }>(() => ({
+// menuOpen: the header's left menu (page list, plus a page's side panels on
+// narrow screens).
+export const useRoute = create<{ page: Page; menuOpen: boolean }>(() => ({
   page: pageFromPath(window.location.pathname),
+  menuOpen: false,
 }));
 
+export const setMenuOpen = (menuOpen: boolean) => useRoute.setState({ menuOpen });
+
 export function navigate(page: Page) {
+  setMenuOpen(false);
   if (useRoute.getState().page === page) return;
   window.history.pushState(null, '', PATHS[page] + window.location.search);
   useRoute.setState({ page });

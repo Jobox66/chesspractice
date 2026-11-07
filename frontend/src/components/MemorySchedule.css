@@ -38,6 +38,64 @@
 }
 
 .schedule-chart-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
   width: 100%;
-  padding-right: 0.5rem;
+  padding: 0.25rem 0.875rem 0.75rem;
+}
+
+/* Help link sits at the far right of the header. */
+.schedule-card .panel-header .schedule-help {
+  margin-left: auto;
+}
+
+/* ---------- Today card ---------- */
+.today-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.today-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.5rem;
+  background: var(--c-recessed);
+}
+
+.today-stats dt {
+  font-size: 0.6875rem;
+  color: var(--c-gray-500);
+}
+
+.today-stats dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-gray-900);
+}
+
+/* Something to review: the one tile that asks for action gets the accent. */
+.today-stats .is-due {
+  background: color-mix(in srgb, var(--c-brand-blue) 14%, transparent);
+}
+
+.today-stats .is-due dt,
+.today-stats .is-due dd {
+  color: var(--c-brand-blue);
+}
+
+.today-empty {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--c-gray-500);
 }

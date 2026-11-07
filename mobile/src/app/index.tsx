@@ -1,14 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../store/app';
 import type { Chapter } from '../core/types';
+import { dueByDay } from '../core/training';
 import { Banner, Button, Card } from '../components/ui';
 import { theme } from '../components/theme';
 
 export default function Home() {
-  const { repertoire, user, loading, error, connected, pending, refresh, recount, renameChapter, deleteChapter } = useApp();
+  const { repertoire, user, loading, error, connected, pending, refresh, recount, renameChapter, deleteChapter, key } = useApp();
   const insets = useSafeAreaInsets();
   const [renaming, setRenaming] = useState<Chapter | null>(null);
   const [newName, setNewName] = useState('');
@@ -21,6 +22,8 @@ export default function Home() {
   );
 
   const totalDue = repertoire.reduce((n, c) => n + c.lastDueCount, 0);
+  const userKey = key();
+  const perDay = useMemo(() => dueByDay(repertoire, userKey, SCHEDULE_DAYS), [repertoire, userKey]);
 
   const openMenu = (c: Chapter) =>
     Alert.alert(c.name, undefined, [
@@ -75,7 +78,7 @@ export default function Home() {
                 action={<Button small kind="secondary" title="Retry" onPress={() => void refresh()} />}
               />
             )}
-            {totalDue > 0 && <Text style={styles.dueTotal}>{totalDue} move{totalDue === 1 ? '' : 's'} due today</Text>}
+            {repertoire.length > 0 && <ScheduleCard counts={perDay} dueNow={totalDue} />}
           </View>
         }
         ListEmptyComponent={
@@ -150,10 +153,53 @@ export default function Home() {
   );
 }
 
+// Next two weeks of reviews, one cell per day (date + count), shaded like
+// the web app's memory schedule.
+const SCHEDULE_DAYS = 14;
+const HEAT = ['#eef1f5', '#c9deff', '#91bbff', '#6991ff', '#1856ff'];
+const WEEKDAY = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+function ScheduleCard({ counts, dueNow }: { counts: number[]; dueNow: number }) {
+  const max = Math.max(...counts);
+  const today = new Date();
+  const rows = [counts.slice(0, 7), counts.slice(7, 14)];
+  return (
+    <Card style={{ gap: 8 }}>
+      <View style={styles.row}>
+        <Text style={[styles.name, { fontSize: 15 }]}>Next 14 days</Text>
+        <Text style={[styles.counts, { marginTop: 0 }, dueNow > 0 && styles.due]}>{dueNow} due now</Text>
+      </View>
+      {rows.map((row, r) => (
+        <View key={r} style={styles.schedRow}>
+          {row.map((n, i) => {
+            const offset = r * 7 + i;
+            const d = new Date(today);
+            d.setDate(d.getDate() + offset);
+            const lv = n === 0 ? 0 : max <= 1 ? 4 : Math.min(4, Math.ceil((n / max) * 4));
+            const fg = lv >= 3 ? '#fff' : theme.text;
+            return (
+              <View key={i} style={[styles.schedCell, { backgroundColor: HEAT[lv] }, offset === 0 && styles.schedToday]}>
+                <Text style={[styles.schedDate, { color: fg }]}>
+                  {WEEKDAY[d.getDay()]} {d.getDate()}
+                </Text>
+                <Text style={[styles.schedCount, { color: fg }]}>{n || ''}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
+  schedRow: { flexDirection: 'row', gap: 4 },
+  schedCell: { flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 6 },
+  schedToday: { borderWidth: 2, borderColor: theme.primary },
+  schedDate: { fontSize: 10 },
+  schedCount: { fontSize: 14, fontWeight: '700', minHeight: 18 },
   account: { color: theme.primary, fontWeight: '600', fontSize: 15 },
   status: { color: theme.muted, fontSize: 13 },
-  dueTotal: { fontSize: 16, fontWeight: '700', color: theme.text },
   empty: { color: theme.muted, textAlign: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   side: { width: 14, height: 14, borderRadius: 3, borderWidth: 1, borderColor: '#555' },
