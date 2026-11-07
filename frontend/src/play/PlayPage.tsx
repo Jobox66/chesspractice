@@ -50,6 +50,7 @@ import {
   JUDGMENT_LABEL,
   JUDGMENT_SYMBOL,
   reviewMoves,
+  terminalEval,
   winPct,
   type MoveReview,
   type Judgment,
@@ -293,7 +294,7 @@ function BoardPlayerBar(props: {
 
 function PlayBoard() {
   const { game, fens } = useShown();
-  const { viewPly, engine, hint, move, flipped, review } = usePlayStore();
+  const { viewPly, engine, hint, move, flipped, review, liveEvals } = usePlayStore();
   const reviews = useReviews();
   const [promo, setPromo] = useState<{ from: Key; to: Key } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -313,8 +314,16 @@ function PlayBoard() {
   const currentTurn = turnOf(fen);
   const material = useMemo(() => calculateMaterial(fen), [fen]);
 
-  const currentEval = game?.analysis?.evals?.[ply] ?? null;
-  const showEvalBar = !!currentEval;
+  // Live evaluation fallback chain: analysis -> live Stockfish -> terminal -> material
+  const currentEval = useMemo(() => {
+    if (game?.analysis?.evals?.[ply]) return game.analysis.evals[ply];
+    if (liveEvals?.[ply]) return liveEvals[ply];
+    const term = terminalEval(fen);
+    if (term) return term;
+    return { cp: material.diff * 100, mate: null };
+  }, [game?.analysis, liveEvals, ply, fen, material.diff]);
+
+  const showEvalBar = true;
 
   const topIsUser = topSide === player;
   const topName = topIsUser ? 'You' : 'Stockfish';

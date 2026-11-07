@@ -93,6 +93,7 @@ interface PlayState extends Shown {
   libraryStatus: 'idle' | 'loading' | 'ready';
   syncError: string | null;
   analysing: { id: string; done: number; total: number } | null;
+  liveEvals: Record<number, { cp: number | null; mate: number | null }>;
 
   toggleFlip: () => void;
   initEngine: () => void;
@@ -197,6 +198,27 @@ export const usePlayStore = create<PlayState>((set, get) => {
     return true;
   }
 
+  async function evalCurrentPosition() {
+    const { game, fens, engine: status } = get();
+    if (!game || game.result || !engine || status !== 'ready') return;
+    const ply = fens.length - 1;
+    const fen = fens[ply];
+    if (get().liveEvals[ply]?.cp != null || get().liveEvals[ply]?.mate != null) return;
+    const t = token();
+    try {
+      const res = await engine.search(fen, 'max', 'movetime 250');
+      if (token() !== t || !res.line) return;
+      const sign = turnOf(fen) === 'white' ? 1 : -1;
+      const evalWhite = {
+        cp: res.line.cp != null ? res.line.cp * sign : null,
+        mate: res.line.mate != null ? res.line.mate * sign : null,
+      };
+      set((s) => ({ liveEvals: { ...s.liveEvals, [ply]: evalWhite } }));
+    } catch {
+      // non-critical background search
+    }
+  }
+
   async function engineTurn() {
     const { game, fens } = get();
     if (!game || game.result || !engine) return;
@@ -207,6 +229,15 @@ export const usePlayStore = create<PlayState>((set, get) => {
     const started = Date.now();
     try {
       const res = await engine.search(fen, engineStrength(game.elo), opponentGo(game.elo));
+      if (res.line) {
+        const sign = turnOf(fen) === 'white' ? 1 : -1;
+        const evalWhite = {
+          cp: res.line.cp != null ? res.line.cp * sign : null,
+          mate: res.line.mate != null ? res.line.mate * sign : null,
+        };
+        const currentPly = fens.length - 1;
+        set((s) => ({ liveEvals: { ...s.liveEvals, [currentPly]: evalWhite } }));
+      }
       // a beat before replying, so instant moves don't feel mechanical
       await sleep(Math.max(0, 350 - (Date.now() - started)));
       if (token() !== t) return; // new game / takeback meanwhile
@@ -216,7 +247,10 @@ export const usePlayStore = create<PlayState>((set, get) => {
       if (token() === t) set({ engine: 'error' });
       return;
     }
-    if (get().engine === 'thinking') set({ engine: 'ready' });
+    if (get().engine === 'thinking') {
+      set({ engine: 'ready' });
+      void evalCurrentPosition();
+    }
   }
 
   return {
@@ -233,6 +267,7 @@ export const usePlayStore = create<PlayState>((set, get) => {
     libraryStatus: 'idle',
     syncError: null,
     analysing: null,
+    liveEvals: { 0: { cp: 20, mate: null } },
 
     toggleFlip: () => set({ flipped: !get().flipped }),
 
@@ -329,12 +364,14 @@ export const usePlayStore = create<PlayState>((set, get) => {
         hint: null,
         hintLoading: false,
         flipped: false,
+        liveEvals: { 0: { cp: 20, mate: null } },
       });
       persist();
       if (engine && status !== 'loading' && status !== 'error') {
         set({ engine: 'ready' });
         engine.newGame();
-        void engineTurn();
+        if (playerColor === 'white') void evalCurrentPosition();
+        else void engineTurn();
       }
     },
 
