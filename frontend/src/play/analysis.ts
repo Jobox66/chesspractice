@@ -1,11 +1,12 @@
 // Post-game review: Stockfish evaluates every position of a finished game,
 // and each move is judged by how much it dropped the mover's winning chances
-// (the Lichess method: win% from centipawns, thresholds 10 / 20 / 30).
+// (the Lichess & Chess.com method: brilliant, best, good, book, inaccuracy, mistake, blunder).
 
 import { Chess } from 'chessops/chess';
 import { parseFen } from 'chessops/fen';
 import type { Engine } from './engine';
 import { sanOf, turnOf, type Color } from './game';
+import { isPlyInBook } from './openings';
 
 export interface Analysis {
   v: 1;
@@ -16,10 +17,34 @@ export interface Analysis {
   best: string[];
 }
 
-export type Judgment = 'inaccuracy' | 'mistake' | 'blunder';
+export type Judgment =
+  | 'brilliant'
+  | 'best'
+  | 'good'
+  | 'book'
+  | 'inaccuracy'
+  | 'mistake'
+  | 'blunder';
 
-export const JUDGMENT_SYMBOL: Record<Judgment, string> = { inaccuracy: '?!', mistake: '?', blunder: '??' };
-export const JUDGMENT_LABEL: Record<Judgment, string> = { inaccuracy: 'Inaccuracy', mistake: 'Mistake', blunder: 'Blunder' };
+export const JUDGMENT_SYMBOL: Record<Judgment, string> = {
+  brilliant: '!!',
+  best: '★',
+  good: '✓',
+  book: '📖',
+  inaccuracy: '?!',
+  mistake: '?',
+  blunder: '??',
+};
+
+export const JUDGMENT_LABEL: Record<Judgment, string> = {
+  brilliant: 'Brilliant (Thiên tài)',
+  best: 'Best move (Nước tốt nhất)',
+  good: 'Good move (Nước tốt)',
+  book: 'Book move (Lý thuyết)',
+  inaccuracy: 'Inaccuracy (Kém chính xác)',
+  mistake: 'Mistake (Sai lầm)',
+  blunder: 'Blunder (Sai lầm nghiêm trọng)',
+};
 
 export interface MoveReview {
   ply: number; // the move that led to fens[ply]
@@ -96,7 +121,52 @@ export async function analyseGame(
 
 // ---------------------------------------------------------------------------
 
-export function reviewMoves(moves: string[], fens: string[], a: Analysis): MoveReview[] {
+function pieceScores(fen: string): { white: number; black: number } {
+  const board = fen.split(' ')[0] ?? '';
+  let white = 0;
+  let black = 0;
+  const val: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+  for (const ch of board) {
+    const low = ch.toLowerCase();
+    if (val[low]) {
+      if (ch === low) black += val[low];
+      else white += val[low];
+    }
+  }
+  return { white, black };
+}
+
+function isBrilliantMove(
+  fenBefore: string,
+  fenAfter: string,
+  drop: number,
+  after: { cp: number | null; mate: number | null },
+  mover: Color,
+  ply: number,
+): boolean {
+  if (ply <= 6) return false;
+  if (drop > 1.5) return false; // Must lose almost zero win chance
+  const win = mover === 'white' ? winPct(after) : 100 - winPct(after);
+  if (win < 65) return false; // Position must remain winning
+
+  // Material sacrifice check
+  const b = pieceScores(fenBefore);
+  const a = pieceScores(fenAfter);
+  const moverDiff =
+    mover === 'white'
+      ? (a.white - a.black) - (b.white - b.black)
+      : (a.black - a.white) - (b.black - b.white);
+
+  // Mover sacrificed at least 2 points of material (e.g. piece or exchange)
+  return moverDiff <= -2;
+}
+
+export function reviewMoves(
+  moves: string[],
+  fens: string[],
+  a: Analysis,
+  sans?: string[],
+): MoveReview[] {
   const out: MoveReview[] = [];
   for (let ply = 1; ply < fens.length && ply < a.evals.length; ply++) {
     const before = a.evals[ply - 1];
@@ -107,12 +177,28 @@ export function reviewMoves(moves: string[], fens: string[], a: Analysis): MoveR
     const played = moves[ply - 1];
     const engineBest = a.best[ply - 1] || null;
     const sameAsBest = !!engineBest && sameMove(played, engineBest);
+
     let judgment: Judgment | null = null;
-    if (!sameAsBest) {
-      if (drop >= 30) judgment = 'blunder';
-      else if (drop >= 20) judgment = 'mistake';
-      else if (drop >= 10) judgment = 'inaccuracy';
+
+    // 1. Check if it's an opening book move
+    if (sans && isPlyInBook(sans, ply)) {
+      judgment = 'book';
+    } else if (drop >= 30) {
+      judgment = 'blunder';
+    } else if (drop >= 20) {
+      judgment = 'mistake';
+    } else if (drop >= 10) {
+      judgment = 'inaccuracy';
+    } else if (sameAsBest || drop < 3) {
+      if (isBrilliantMove(fens[ply - 1], fens[ply], drop, after, mover, ply)) {
+        judgment = 'brilliant';
+      } else {
+        judgment = 'best';
+      }
+    } else if (drop < 10) {
+      judgment = 'good';
     }
+
     const best = engineBest && !sameAsBest ? engineBest : null;
     out.push({
       ply,
@@ -151,8 +237,20 @@ export function accuracy(reviews: MoveReview[], color: Color): number | null {
   return Math.round(per.reduce((s, x) => s + x, 0) / per.length);
 }
 
-export function judgmentCounts(reviews: MoveReview[], color: Color) {
-  const c = { inaccuracy: 0, mistake: 0, blunder: 0 };
-  for (const r of reviews) if (r.mover === color && r.judgment) c[r.judgment]++;
+export function judgmentCounts(reviews: MoveReview[], color: Color): Record<Judgment, number> {
+  const c: Record<Judgment, number> = {
+    brilliant: 0,
+    best: 0,
+    good: 0,
+    book: 0,
+    inaccuracy: 0,
+    mistake: 0,
+    blunder: 0,
+  };
+  for (const r of reviews) {
+    if (r.mover === color && r.judgment) {
+      c[r.judgment]++;
+    }
+  }
   return c;
 }

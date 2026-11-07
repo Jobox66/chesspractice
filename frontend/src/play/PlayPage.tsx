@@ -54,7 +54,11 @@ import {
   winPct,
   type MoveReview,
   type Judgment,
+  type Analysis,
 } from './analysis';
+import { detectOpening, type OpeningMatch } from './openings';
+import { useTrainerStore } from '../store/state';
+import { navigate } from '../util/route';
 import { EvalGraph } from './EvalGraph';
 import '../css/layout.css';
 import '../components/UserTip.css';
@@ -73,13 +77,30 @@ function moveNo(ply: number): string {
   return ply % 2 === 1 ? `${(ply + 1) / 2}.` : `${ply / 2}…`;
 }
 
-// Per-move review of the shown game, when it has been analysed.
+// Per-move review of the shown game: uses full engine analysis if available,
+// or combines live evaluations and opening book detection during active play.
 function useReviews(): MoveReview[] | null {
-  const { game, fens } = useShown();
-  return useMemo(
-    () => (game?.analysis && game.analysis.evals.length === fens.length ? reviewMoves(game.moves, fens, game.analysis) : null),
-    [game, fens],
-  );
+  const { game, fens, sans } = useShown();
+  const liveEvals = usePlayStore((s) => s.liveEvals);
+  return useMemo(() => {
+    if (game?.analysis && game.analysis.evals.length === fens.length) {
+      return reviewMoves(game.moves, fens, game.analysis, sans);
+    }
+    if (fens.length > 1) {
+      const syntheticEvals: { cp: number | null; mate: number | null }[] = fens.map(
+        (_, i) => liveEvals[i] ?? { cp: 0, mate: null },
+      );
+      const synthAnalysis: Analysis = {
+        v: 1,
+        movetime: 0,
+        evals: syntheticEvals,
+        best: new Array(fens.length).fill(''),
+      };
+      const playedMoves = game?.moves ?? [];
+      return reviewMoves(playedMoves, fens, synthAnalysis, sans);
+    }
+    return null;
+  }, [game, fens, sans, liveEvals]);
 }
 
 export default function PlayPage() {
@@ -358,13 +379,16 @@ function PlayBoard() {
     shapes.push({ orig: hint.uci.slice(0, 2) as Key, dest: hint.uci.slice(2, 4) as Key, brush: 'green' });
   }
 
-  // Reviewing: show the mistake move and best move on the board
+  // Reviewing / navigating moves: show the played move shape and best move on the board
   const r = reviews && ply > 0 ? reviews[ply - 1] : null;
   if (r) {
     if (r.judgment && lastUci) {
       const orig = lastUci.slice(0, 2) as Key;
       const dest = lastUci.slice(2, 4) as Key;
-      const brush = r.judgment === 'blunder' ? 'red' : 'yellow';
+      let brush: 'red' | 'yellow' | 'green' | 'blue' = 'green';
+      if (r.judgment === 'blunder') brush = 'red';
+      else if (r.judgment === 'mistake' || r.judgment === 'inaccuracy') brush = 'yellow';
+      else if (r.judgment === 'brilliant') brush = 'blue';
       shapes.push({ orig, dest, brush });
     }
     if (r.best) {
@@ -825,6 +849,65 @@ function HistoryRow(props: {
 
 // ---------------------------------------------------------------------------
 
+function OpeningBanner({
+  opening,
+  onSelectChapter,
+}: {
+  opening: OpeningMatch | null;
+  onSelectChapter: (id: string, name: string) => void;
+}) {
+  if (!opening) return null;
+
+  return (
+    <div className="play-opening-card">
+      <div className="play-opening-main">
+        <div className="play-opening-title-row">
+          <span className="play-opening-eco">{opening.eco}</span>
+          <span className="play-opening-name" title={opening.fullName}>
+            {opening.name}
+            {opening.variation && <span className="play-opening-var">: {opening.variation}</span>}
+          </span>
+          {opening.isInBook ? (
+            <span className="play-opening-pill is-book" title="Nước đi thuộc sách lý thuyết khai cuộc">
+              📖 Book
+            </span>
+          ) : (
+            <span className="play-opening-pill is-out" title="Rời khỏi sách lý thuyết">
+              ⚡ Out of Book
+            </span>
+          )}
+        </div>
+
+        {opening.chapter && (
+          <div className="play-opening-chapter-row">
+            <span className="play-opening-chapter-badge">
+              <span className="play-curriculum-icon">📚</span>
+              <span>Giáo trình: <strong>{opening.chapter.name}</strong></span>
+            </span>
+            <button
+              type="button"
+              className="play-opening-study-btn"
+              onClick={() => onSelectChapter(opening.chapter!.id, opening.chapter!.name)}
+              title="Luyện tập khai cuộc này trong Repertoire"
+            >
+              Luyện tập ↗
+            </button>
+          </div>
+        )}
+
+        {opening.chapter?.tip && (
+          <div className="play-opening-tip">
+            <span className="play-opening-tip-icon">💡</span>
+            <span>{opening.chapter.tip}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
 function MovesPanel() {
   const { game, sans, fens } = useShown();
   const { viewPly, setViewPly, toggleFlip, review, closeReview } = usePlayStore();
@@ -835,6 +918,25 @@ function MovesPanel() {
   const current = viewPly ?? last;
   const currentFen = fens[current];
   const material = useMemo(() => (currentFen ? calculateMaterial(currentFen) : null), [currentFen]);
+
+  const opening = useMemo(() => {
+    const currentSans = sans.slice(0, current > 0 ? current : sans.length);
+    return detectOpening(currentSans.length > 0 ? currentSans : sans);
+  }, [sans, current]);
+
+  const handleSelectChapter = (id: string, name: string) => {
+    const repertoire = useTrainerStore.getState().repertoire;
+    const match = repertoire.find(
+      (c) =>
+        c.uuid === id ||
+        c.name.toLowerCase().includes(name.toLowerCase()) ||
+        name.toLowerCase().includes(c.name.toLowerCase()),
+    );
+    if (match) {
+      useTrainerStore.getState().setSelectedChapterId(match.uuid);
+    }
+    navigate('openings');
+  };
 
   useEffect(() => {
     listRef.current?.querySelector('.is-current')?.scrollIntoView({ block: 'nearest' });
@@ -853,7 +955,7 @@ function MovesPanel() {
         type="button"
         className={`play-move is-${side} ${current === ply ? 'is-current' : ''}`}
         onClick={() => setViewPly(ply)}
-        title={j ? JUDGMENT_LABEL[j] : undefined}
+        title={j ? `${JUDGMENT_LABEL[j]} (${JUDGMENT_SYMBOL[j]})` : undefined}
       >
         <span className={`play-move-pip is-${side}`} />
         <span className="play-move-san">{san}</span>
@@ -893,6 +995,7 @@ function MovesPanel() {
         </span>
       </div>
 
+      <OpeningBanner opening={opening} onSelectChapter={handleSelectChapter} />
       {game && reviews && <AnalysisSummary reviews={reviews} player={game.playerColor} />}
       {graph && <EvalGraph points={graph.points} marks={graph.marks} current={current} onSelect={(p) => setViewPly(p)} />}
 
@@ -977,6 +1080,40 @@ function AnalysisSummary({ reviews, player }: { reviews: MoveReview[]; player: C
   const whiteJudgments = judgmentCounts(reviews, 'white');
   const blackJudgments = judgmentCounts(reviews, 'black');
 
+  const renderJudgments = (c: Record<Judgment, number>) => (
+    <div className="play-card-judgments">
+      {c.brilliant > 0 && (
+        <span className="play-card-j is-brilliant" title="Brilliant (Thiên tài)">
+          <span className="play-j-sym">!!</span> {c.brilliant}
+        </span>
+      )}
+      {c.best > 0 && (
+        <span className="play-card-j is-best" title="Best moves (Nước tốt nhất)">
+          <span className="play-j-sym">★</span> {c.best}
+        </span>
+      )}
+      {c.good > 0 && (
+        <span className="play-card-j is-good" title="Good moves (Nước tốt)">
+          <span className="play-j-sym">✓</span> {c.good}
+        </span>
+      )}
+      {c.book > 0 && (
+        <span className="play-card-j is-book" title="Book moves (Lý thuyết)">
+          <span className="play-j-sym">📖</span> {c.book}
+        </span>
+      )}
+      <span className="play-card-j is-inaccuracy" title="Inaccuracies (Kém chính xác)">
+        <span className="play-j-sym">?!</span> {c.inaccuracy}
+      </span>
+      <span className="play-card-j is-mistake" title="Mistakes (Sai lầm)">
+        <span className="play-j-sym">?</span> {c.mistake}
+      </span>
+      <span className="play-card-j is-blunder" title="Blunders (Sai lầm nghiêm trọng)">
+        <span className="play-j-sym">??</span> {c.blunder}
+      </span>
+    </div>
+  );
+
   return (
     <div className="play-review-cards">
       {/* White Player Zone */}
@@ -992,17 +1129,7 @@ function AnalysisSummary({ reviews, player }: { reviews: MoveReview[]; player: C
           <span className="play-card-acc-num">{whiteAcc != null ? `${whiteAcc}%` : '–'}</span>
           <span className="play-card-acc-label">Accuracy</span>
         </div>
-        <div className="play-card-judgments">
-          <span className="play-card-j is-inaccuracy" title="Inaccuracies">
-            <span className="play-j-sym">?!</span> {whiteJudgments.inaccuracy}
-          </span>
-          <span className="play-card-j is-mistake" title="Mistakes">
-            <span className="play-j-sym">?</span> {whiteJudgments.mistake}
-          </span>
-          <span className="play-card-j is-blunder" title="Blunders">
-            <span className="play-j-sym">??</span> {whiteJudgments.blunder}
-          </span>
-        </div>
+        {renderJudgments(whiteJudgments)}
       </div>
 
       {/* Black Player Zone */}
@@ -1018,17 +1145,7 @@ function AnalysisSummary({ reviews, player }: { reviews: MoveReview[]; player: C
           <span className="play-card-acc-num">{blackAcc != null ? `${blackAcc}%` : '–'}</span>
           <span className="play-card-acc-label">Accuracy</span>
         </div>
-        <div className="play-card-judgments">
-          <span className="play-card-j is-inaccuracy" title="Inaccuracies">
-            <span className="play-j-sym">?!</span> {blackJudgments.inaccuracy}
-          </span>
-          <span className="play-card-j is-mistake" title="Mistakes">
-            <span className="play-j-sym">?</span> {blackJudgments.mistake}
-          </span>
-          <span className="play-card-j is-blunder" title="Blunders">
-            <span className="play-j-sym">??</span> {blackJudgments.blunder}
-          </span>
-        </div>
+        {renderJudgments(blackJudgments)}
       </div>
     </div>
   );

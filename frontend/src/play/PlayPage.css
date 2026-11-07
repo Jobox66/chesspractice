@@ -344,6 +344,26 @@
   }
 }
 
+.play-board-badge.is-brilliant {
+  background: #06b6d4;
+  color: #ffffff;
+}
+
+.play-board-badge.is-best {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.play-board-badge.is-good {
+  background: #84cc16;
+  color: #ffffff;
+}
+
+.play-board-badge.is-book {
+  background: #d99b26;
+  color: #ffffff;
+}
+
 .play-board-badge.is-blunder {
   background: #ef4444;
   color: #ffffff;
@@ -698,8 +718,29 @@
 /* Judgment symbols: the ?! / ? / ?? text carries the meaning, the colour
    (status ramp: caution → serious → critical) only reinforces it. */
 .play-judgment {
-  margin-left: 0.125rem;
-  font-weight: 700;
+  margin-left: 0.25rem;
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+.play-judgment.is-brilliant,
+.eval-graph-mark.is-brilliant,
+.play-judgment-icon.is-brilliant {
+  --j: #06b6d4;
+}
+.play-judgment.is-best,
+.eval-graph-mark.is-best,
+.play-judgment-icon.is-best {
+  --j: #22c55e;
+}
+.play-judgment.is-good,
+.eval-graph-mark.is-good,
+.play-judgment-icon.is-good {
+  --j: #84cc16;
+}
+.play-judgment.is-book,
+.eval-graph-mark.is-book,
+.play-judgment-icon.is-book {
+  --j: #d99b26;
 }
 .play-judgment.is-inaccuracy,
 .eval-graph-mark.is-inaccuracy,
@@ -720,7 +761,7 @@
   color: var(--j);
 }
 .play-move.is-current .play-judgment {
-  color: inherit;
+  color: #ffffff !important;
 }
 
 .play-judgment-icon {
@@ -862,6 +903,22 @@
 
 .play-card-j .play-j-sym {
   font-weight: 800;
+}
+
+.play-card-j.is-brilliant {
+  color: #06b6d4;
+}
+
+.play-card-j.is-best {
+  color: #22c55e;
+}
+
+.play-card-j.is-good {
+  color: #84cc16;
+}
+
+.play-card-j.is-book {
+  color: #d99b26;
 }
 
 .play-card-j.is-inaccuracy {
@@ -1038,4 +1095,135 @@
 
 .eval-graph-tip.is-left {
   transform: translateX(-100%);
+}
+
+/* ==========================================================================
+   Opening Banner & Curriculum Link
+   ========================================================================== */
+
+.play-opening-card {
+  margin-bottom: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--c-surface-raised, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--c-hairline, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.play-opening-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.play-opening-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
+}
+
+.play-opening-eco {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  background: #3b82f6;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+}
+
+.play-opening-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--c-gray-900);
+}
+
+.play-opening-var {
+  color: var(--c-gray-600);
+  font-weight: 600;
+}
+
+.play-opening-pill {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 999px;
+  margin-left: auto;
+  line-height: 1.2;
+}
+
+.play-opening-pill.is-book {
+  background: rgba(217, 155, 38, 0.18);
+  color: #d99b26;
+  border: 1px solid rgba(217, 155, 38, 0.3);
+}
+
+.play-opening-pill.is-out {
+  background: var(--c-recessed);
+  color: var(--c-gray-500);
+  border: 1px solid var(--c-hairline);
+}
+
+.play-opening-chapter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.375rem;
+  border-top: 1px dashed var(--c-hairline);
+}
+
+.play-opening-chapter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--c-amber-400, #d97706);
+}
+
+.play-opening-chapter-badge strong {
+  color: var(--c-gray-900);
+  font-weight: 700;
+}
+
+.play-curriculum-icon {
+  font-size: 0.875rem;
+}
+
+.play-opening-study-btn {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.25rem;
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.play-opening-study-btn:hover {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.play-opening-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--c-gray-600);
+  background: var(--c-recessed);
+  padding: 0.3125rem 0.5rem;
+  border-radius: 0.25rem;
+  border-left: 2.5px solid #d99b26;
+}
+
+.play-opening-tip-icon {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
 }
