@@ -2,6 +2,7 @@ import { Chess, normalizeMove } from 'chessops/chess';
 import { INITIAL_FEN, makeFen, parseFen } from 'chessops/fen';
 import { makeSan } from 'chessops/san';
 import { makeUci, parseUci } from 'chessops/util';
+import { JUDGMENT_SYMBOL, reviewMoves, type Analysis } from './analysis';
 
 export type Color = 'white' | 'black';
 
@@ -21,6 +22,8 @@ export interface Game {
   takebacks: number;
   startedAt: string;
   endedAt: string | null;
+  // Engine review, once run (finished games only).
+  analysis?: Analysis | null;
 }
 
 export interface Replayed {
@@ -109,7 +112,8 @@ export function pgnResult(r: GameResult | null): string {
 }
 
 export function toPgn(game: Game): string {
-  const { sans } = replay(game.moves);
+  const { sans, fens } = replay(game.moves);
+  const reviews = game.analysis ? reviewMoves(game.moves, fens, game.analysis) : [];
   const engine = `Stockfish (${game.elo})`;
   const date = game.startedAt.slice(0, 10).replace(/-/g, '.');
   const result = pgnResult(game.result);
@@ -122,7 +126,17 @@ export function toPgn(game: Game): string {
     ['Result', result],
   ];
   const body: string[] = [];
-  sans.forEach((san, i) => body.push(i % 2 === 0 ? `${i / 2 + 1}. ${san}` : san));
+  sans.forEach((san, i) => {
+    // Annotated: "14... Qxb2?? { Best: Nd7 }"
+    const r = reviews[i];
+    const mark = r?.judgment ? JUDGMENT_SYMBOL[r.judgment] : '';
+    // a Black move after a comment needs its number again ("14...")
+    const prev = reviews[i - 1];
+    const afterComment = !!(prev?.judgment && prev.bestSan);
+    const prefix = i % 2 === 0 ? `${i / 2 + 1}. ` : afterComment ? `${(i + 1) / 2}... ` : '';
+    body.push(prefix + san + mark);
+    if (r?.judgment && r.bestSan) body.push(`{ Best: ${r.bestSan} }`);
+  });
   body.push(result);
   return headers.map(([k, v]) => `[${k} "${v}"]`).join('\n') + '\n\n' + body.join(' ') + '\n';
 }

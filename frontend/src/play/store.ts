@@ -1,7 +1,10 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { INITIAL_FEN } from 'chessops/fen';
 import { getEngine, lowSkill, MIN_UCI_ELO, type Engine } from './engine';
 import { fenAfter, gameStatus, legalUci, replay, sanOf, scoreText, turnOf, type Color, type Game, type GameResult } from './game';
+import { analyseGame } from './analysis';
+import { fetchGames, HttpError, removeGame, uploadGame } from './sync';
 
 export const MIN_ELO = 800;
 export const MAX_ELO = 3000; // the slider's top stop means "full strength"
@@ -19,8 +22,22 @@ export interface Hint {
   score: string;
 }
 
-const KEYS = { settings: 'play-settings-v1', game: 'play-game-v1', history: 'play-history-v1' };
-const HISTORY_SIZE = 30;
+// A game on screen: the one being played, or a saved one opened for review.
+export interface Shown {
+  game: Game | null;
+  fens: string[];
+  sans: string[];
+}
+
+// Finished games: localStorage for guests; for a signed-in user the server
+// is the source and localStorage keeps a per-user copy, so a game that
+// failed to upload (sleeping server, offline) is re-sent on the next load.
+const KEYS = {
+  settings: 'play-settings-v1',
+  game: 'play-game-v1',
+  history: (owner: string | null) => (owner ? `play-history-u-${owner}` : 'play-history-v1'),
+};
+const HISTORY_SIZE = 200;
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -49,6 +66,8 @@ function save(key: string, value: unknown) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const byEnded = (a: Game, b: Game) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt);
+
 // Opponent search: UCI_Elo needs real thinking time to calibrate; the low
 // levels are Skill Level plus a shallow depth.
 function opponentGo(elo: number): string {
@@ -59,21 +78,25 @@ function engineStrength(elo: number) {
   return elo >= MAX_ELO ? ('max' as const) : { elo };
 }
 
-interface PlayState {
+interface PlayState extends Shown {
   settings: PlaySettings;
-  game: Game | null;
-  fens: string[];
-  sans: string[];
-  // A past position being looked at; null = following the game.
+  // A past position being looked at (of the shown game); null = the end.
   viewPly: number | null;
   engine: 'loading' | 'ready' | 'thinking' | 'error';
   hint: Hint | null;
   hintLoading: boolean;
-  history: Game[];
   flipped: boolean;
+
+  review: Shown | null;
+  history: Game[];
+  owner: string | null; // signed-in username whose library is loaded
+  libraryStatus: 'idle' | 'loading' | 'ready';
+  syncError: string | null;
+  analysing: { id: string; done: number; total: number } | null;
 
   toggleFlip: () => void;
   initEngine: () => void;
+  loadLibrary: (username: string | null) => Promise<void>;
   updateSettings: (patch: Partial<PlaySettings>) => void;
   newGame: () => void;
   move: (uci: string) => void;
@@ -81,9 +104,14 @@ interface PlayState {
   resign: () => void;
   requestHint: () => void;
   setViewPly: (ply: number | null) => void;
+  openGame: (id: string) => void;
+  closeReview: () => void;
+  deleteGame: (id: string) => void;
+  analyse: () => void;
+  cancelAnalysis: () => void;
 }
 
-function initialGameState() {
+function initialGameState(): Shown {
   const game = load<Game | null>(KEYS.game, null);
   if (!game?.id) return { game: null, fens: [INITIAL_FEN], sans: [] };
   try {
@@ -96,21 +124,54 @@ function initialGameState() {
 
 export const usePlayStore = create<PlayState>((set, get) => {
   let engine: Engine | null = null;
+  let libraryToken = 0;
   const token = () => {
     const g = get().game;
     return g ? `${g.id}:${g.moves.length}` : '';
   };
 
   const persist = () => save(KEYS.game, get().game);
+  const shown = (): Shown => get().review ?? { game: get().game, fens: get().fens, sans: get().sans };
+
+  function setHistory(history: Game[]) {
+    const sorted = [...history].sort(byEnded).slice(0, HISTORY_SIZE);
+    set({ history: sorted });
+    save(KEYS.history(get().owner), sorted);
+  }
+
+  async function upload(game: Game) {
+    if (!get().owner) return;
+    try {
+      await uploadGame(game);
+      set({ syncError: null });
+    } catch (err) {
+      console.warn('game upload failed', err);
+      set({
+        syncError:
+          err instanceof HttpError && err.status === 401
+            ? 'Session expired: games are only saved in this browser. Log in again.'
+            : "Couldn't save the game to your account; it will be retried next time.",
+      });
+    }
+  }
+
+  // Put an updated finished game everywhere it appears, save and upload it.
+  function storeGame(game: Game) {
+    setHistory([game, ...get().history.filter((h) => h.id !== game.id)]);
+    if (get().game?.id === game.id) {
+      set({ game });
+      persist();
+    }
+    const review = get().review;
+    if (review?.game?.id === game.id) set({ review: { ...review, game } });
+    void upload(game);
+  }
 
   function finish(result: GameResult) {
     const g = get().game;
     if (!g) return;
-    const done: Game = { ...g, result, endedAt: new Date().toISOString() };
-    const history = [done, ...get().history.filter((h) => h.id !== done.id)].slice(0, HISTORY_SIZE);
-    set({ game: done, history, hint: null });
-    save(KEYS.history, history);
-    persist();
+    set({ hint: null });
+    storeGame({ ...g, result, endedAt: new Date().toISOString() });
   }
 
   function apply(uci: string): boolean {
@@ -126,7 +187,7 @@ export const usePlayStore = create<PlayState>((set, get) => {
       fens: newFens,
       sans: [...sans, san],
       hint: null,
-      viewPly: null,
+      viewPly: get().review ? get().viewPly : null,
     });
     persist();
     const result = gameStatus(newFens);
@@ -163,8 +224,13 @@ export const usePlayStore = create<PlayState>((set, get) => {
     engine: 'loading',
     hint: null,
     hintLoading: false,
-    history: loadList<Game>(KEYS.history),
     flipped: false,
+    review: null,
+    history: loadList<Game>(KEYS.history(null)),
+    owner: null,
+    libraryStatus: 'idle',
+    syncError: null,
+    analysing: null,
 
     toggleFlip: () => set({ flipped: !get().flipped }),
 
@@ -185,6 +251,44 @@ export const usePlayStore = create<PlayState>((set, get) => {
           set({ engine: 'error' });
         },
       );
+    },
+
+    loadLibrary: async (username) => {
+      const t = ++libraryToken;
+      set({ owner: username, libraryStatus: 'loading', syncError: null, review: null, viewPly: null });
+      const local = loadList<Game>(KEYS.history(username));
+      if (!username) {
+        set({ history: [...local].sort(byEnded), libraryStatus: 'ready' });
+        return;
+      }
+      // Signed in: the server list, plus anything only this browser has —
+      // games that failed to upload, and games played as a guest before
+      // logging in. Those are uploaded now.
+      const guest = loadList<Game>(KEYS.history(null));
+      let server: Game[];
+      try {
+        server = await fetchGames();
+      } catch (err) {
+        if (t !== libraryToken) return;
+        console.warn('game library failed to load', err);
+        set({
+          history: [...local].sort(byEnded),
+          libraryStatus: 'ready',
+          syncError: "Couldn't load your saved games from the server; showing this browser's copy.",
+        });
+        return;
+      }
+      if (t !== libraryToken) return;
+      const onServer = new Set(server.map((g) => g.id));
+      const missing = [...local, ...guest].filter(
+        (g, i, all) => g.result && !onServer.has(g.id) && all.findIndex((x) => x.id === g.id) === i,
+      );
+      setHistory([...server, ...missing]);
+      set({ libraryStatus: 'ready' });
+      for (const g of missing) {
+        if (t !== libraryToken) return;
+        await upload(g);
+      }
     },
 
     updateSettings: (patch) => {
@@ -209,7 +313,16 @@ export const usePlayStore = create<PlayState>((set, get) => {
         startedAt: new Date().toISOString(),
         endedAt: null,
       };
-      set({ game, fens: [INITIAL_FEN], sans: [], viewPly: null, hint: null, hintLoading: false, flipped: false });
+      set({
+        game,
+        fens: [INITIAL_FEN],
+        sans: [],
+        review: null,
+        viewPly: null,
+        hint: null,
+        hintLoading: false,
+        flipped: false,
+      });
       persist();
       if (engine && status !== 'loading' && status !== 'error') {
         set({ engine: 'ready' });
@@ -219,8 +332,8 @@ export const usePlayStore = create<PlayState>((set, get) => {
     },
 
     move: (uci) => {
-      const { game, fens, engine: status, viewPly } = get();
-      if (!game || game.result || viewPly != null || status === 'thinking') return;
+      const { game, fens, engine: status, viewPly, review } = get();
+      if (!game || game.result || review || viewPly != null || status === 'thinking') return;
       if (turnOf(fens[fens.length - 1]) !== game.playerColor) return;
       if (apply(uci)) void engineTurn();
     },
@@ -257,8 +370,8 @@ export const usePlayStore = create<PlayState>((set, get) => {
     },
 
     requestHint: () => {
-      const { game, fens, engine: status, hintLoading, viewPly } = get();
-      if (!game || game.result || !engine || status !== 'ready' || hintLoading || viewPly != null) return;
+      const { game, fens, engine: status, hintLoading, viewPly, review } = get();
+      if (!game || game.result || !engine || status !== 'ready' || hintLoading || viewPly != null || review) return;
       const fen = fens[fens.length - 1];
       if (turnOf(fen) !== game.playerColor) return;
       const t = token();
@@ -285,10 +398,70 @@ export const usePlayStore = create<PlayState>((set, get) => {
         });
     },
 
+    // null = the end of the game ("live"). A finished game can also select
+    // its last move explicitly, to read that move's review.
     setViewPly: (ply) => {
-      const last = get().fens.length - 1;
-      if (ply == null || ply >= last) set({ viewPly: null });
+      const { game, fens } = shown();
+      const last = fens.length - 1;
+      if (ply == null || ply > last || (ply === last && !game?.result)) set({ viewPly: null });
       else set({ viewPly: Math.max(0, ply) });
     },
+
+    openGame: (id) => {
+      const game = get().history.find((g) => g.id === id);
+      if (!game) return;
+      // The game being played (if it's this one) is shown as itself.
+      if (get().game?.id === id) {
+        set({ review: null, viewPly: null });
+        return;
+      }
+      const { fens, sans } = replay(game.moves);
+      set({ review: { game, fens, sans }, viewPly: null, flipped: false });
+    },
+
+    closeReview: () => set({ review: null, viewPly: null }),
+
+    deleteGame: (id) => {
+      setHistory(get().history.filter((g) => g.id !== id));
+      if (get().review?.game?.id === id) set({ review: null, viewPly: null });
+      if (get().owner) {
+        removeGame(id).catch((err) => {
+          console.warn('game delete failed', err);
+          set({ syncError: "Couldn't delete the game on the server." });
+        });
+      }
+    },
+
+    analyse: () => {
+      const { game, fens } = shown();
+      if (!game?.result || !engine || get().engine === 'error' || get().analysing) return;
+      const id = game.id;
+      set({ analysing: { id, done: 0, total: fens.length } });
+      analyseGame(
+        engine,
+        fens,
+        (done, total) => {
+          if (get().analysing?.id === id) set({ analysing: { id, done, total } });
+        },
+        () => get().analysing?.id !== id,
+      )
+        .then((analysis) => {
+          if (!analysis || get().analysing?.id !== id) return;
+          set({ analysing: null });
+          const latest = get().history.find((g) => g.id === id) ?? game;
+          storeGame({ ...latest, analysis });
+        })
+        .catch((err) => {
+          console.warn('analysis failed', err);
+          if (get().analysing?.id === id) set({ analysing: null });
+        });
+    },
+
+    cancelAnalysis: () => set({ analysing: null }),
   };
 });
+
+// The game on screen and its positions; re-renders only when they change.
+export function useShown(): Shown {
+  return usePlayStore(useShallow((s) => s.review ?? { game: s.game, fens: s.fens, sans: s.sans }));
+}

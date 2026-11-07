@@ -60,6 +60,10 @@ func RegisterWithLimits(mux *http.ServeMux, db store.Repo, firebaseProjectID str
 
 	mux.HandleFunc("GET /drills/{kind}", GetDrillState(db))
 	mux.HandleFunc("POST /drills/{kind}/attempts", PostDrillAttempt(db))
+
+	mux.HandleFunc("GET /games", ListGames(db))
+	mux.HandleFunc("POST /games/{id}", SaveGame(db))
+	mux.HandleFunc("DELETE /games/{id}", DeleteGame(db))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

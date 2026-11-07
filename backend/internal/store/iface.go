@@ -40,4 +40,8 @@ type Repo interface {
 
 	FetchDrillState(ctx context.Context, userID, kind string) (domain.DrillState, error)
 	RecordDrillAttempt(ctx context.Context, userID, kind string, a domain.DrillAttempt) error
+
+	ListGames(ctx context.Context, userID string) ([]domain.SavedGame, error)
+	UpsertGame(ctx context.Context, userID string, g domain.SavedGame) error
+	DeleteGame(ctx context.Context, userID, id string) error
 }

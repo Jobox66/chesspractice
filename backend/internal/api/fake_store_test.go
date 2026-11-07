@@ -26,6 +26,7 @@ type fakeStore struct {
 	chapters        map[string][]domain.ChapterTreeResponse
 	collaborators   map[collabKey]string // value is the permission ('edit' | 'train')
 	drills          map[drillKey]*domain.DrillState
+	games           map[string][]domain.SavedGame // user id -> games
 
 	// errOn forces a method to return the given error on its next
 	// call. Set via withErr; cleared after the call fires.
@@ -44,6 +45,7 @@ func newFakeStore() *fakeStore {
 		chapters:        map[string][]domain.ChapterTreeResponse{},
 		collaborators:   map[collabKey]string{},
 		drills:          map[drillKey]*domain.DrillState{},
+		games:           map[string][]domain.SavedGame{},
 		errOn:           map[string]error{},
 	}
 }
@@ -285,6 +287,53 @@ func (f *fakeStore) RecordDrillAttempt(_ context.Context, userID, kind string, a
 	st.Attempts = append(st.Attempts, domain.DrillAttemptLog{
 		ItemID: a.ItemID, Success: a.Success, RatingAfter: ratingAfter, DurationMs: a.DurationMs, At: now,
 	})
+	return nil
+}
+
+func (f *fakeStore) ListGames(_ context.Context, userID string) ([]domain.SavedGame, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.takeErr("ListGames"); err != nil {
+		return nil, err
+	}
+	out := append([]domain.SavedGame{}, f.games[userID]...)
+	// newest first, like the SQL
+	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+		out[i], out[j] = out[j], out[i]
+	}
+	return out, nil
+}
+
+func (f *fakeStore) UpsertGame(_ context.Context, userID string, g domain.SavedGame) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.takeErr("UpsertGame"); err != nil {
+		return err
+	}
+	list := f.games[userID]
+	for i := range list {
+		if list[i].ID == g.ID {
+			list[i] = g
+			return nil
+		}
+	}
+	f.games[userID] = append(list, g)
+	return nil
+}
+
+func (f *fakeStore) DeleteGame(_ context.Context, userID, id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.takeErr("DeleteGame"); err != nil {
+		return err
+	}
+	list := f.games[userID][:0]
+	for _, g := range f.games[userID] {
+		if g.ID != id {
+			list = append(list, g)
+		}
+	}
+	f.games[userID] = list
 	return nil
 }
 
