@@ -8,6 +8,10 @@
     "checkJs": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
+    "forceConsistentCasingInFileNames": true,
+    // Type-check only: Vite does the building. Without this, tsc would emit
+    // .js next to every input .js file (scripts/, public/, dist/).
+    "noEmit": true
+  },
+  "include": ["src", "vite-env.d.ts"]
 }
