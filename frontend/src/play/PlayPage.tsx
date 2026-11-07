@@ -52,6 +52,7 @@ import {
   reviewMoves,
   winPct,
   type MoveReview,
+  type Judgment,
 } from './analysis';
 import { EvalGraph } from './EvalGraph';
 import '../css/layout.css';
@@ -173,6 +174,92 @@ export function CapturedPieces(props: {
   );
 }
 
+export function BoardJudgmentBadge(props: {
+  judgment: Judgment;
+  square: string;
+  orientation: Color;
+}) {
+  const { judgment, square, orientation } = props;
+  if (!square || square.length < 2) return null;
+
+  const file = square.charCodeAt(0) - 97;
+  const rank = parseInt(square[1], 10) - 1;
+  if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
+
+  const col = orientation === 'white' ? file : 7 - file;
+  const row = orientation === 'white' ? 7 - rank : rank;
+
+  const left = `calc(${col * 12.5}% + 12.5% - 1.25rem)`;
+  const top = `calc(${row * 12.5}% - 0.35rem)`;
+
+  const symbol = JUDGMENT_SYMBOL[judgment];
+  const label = JUDGMENT_LABEL[judgment];
+
+  return (
+    <div
+      className={`play-board-badge is-${judgment}`}
+      style={{ left, top }}
+      title={`${label} (${symbol}) on ${square}`}
+      aria-label={`${label} on ${square}`}
+    >
+      <span className="play-badge-sym">{symbol}</span>
+    </div>
+  );
+}
+
+export function VerticalEvalBar(props: {
+  eval: { cp: number | null; mate: number | null } | null;
+  orientation: Color;
+}) {
+  const { eval: e, orientation } = props;
+  if (!e) return null;
+
+  const win = winPct(e);
+  const whiteIsBottom = orientation === 'white';
+  const whiteHeightPct = Math.max(4, Math.min(96, win));
+
+  const bottomHeightPct = whiteIsBottom ? whiteHeightPct : 100 - whiteHeightPct;
+  const topHeightPct = 100 - bottomHeightPct;
+
+  const text = evalText(e, 'white');
+  const isWhiteLead = (e.mate != null && e.mate > 0) || (e.cp != null && (e.cp > 0 || (e.cp === 0 && text.startsWith('+'))));
+  const isBlackLead = (e.mate != null && e.mate < 0) || (e.cp != null && e.cp < 0);
+
+  const displayText = useMemo(() => {
+    if (e.mate != null) {
+      return e.mate > 0 ? `M${e.mate}` : `M${Math.abs(e.mate)}`;
+    }
+    const val = (e.cp ?? 0) / 100;
+    return Math.abs(val).toFixed(1);
+  }, [e]);
+
+  return (
+    <div
+      className="play-eval-bar"
+      role="progressbar"
+      aria-label={`Evaluation: ${text}`}
+      title={`Evaluation: ${text} (${win.toFixed(0)}% White win chance)`}
+    >
+      <div
+        className={`play-eval-segment is-top ${whiteIsBottom ? 'is-black' : 'is-white'}`}
+        style={{ height: `${topHeightPct}%` }}
+      >
+        {((whiteIsBottom && isBlackLead) || (!whiteIsBottom && isWhiteLead)) && (
+          <span className="play-eval-text is-top-text">{displayText}</span>
+        )}
+      </div>
+      <div
+        className={`play-eval-segment is-bottom ${whiteIsBottom ? 'is-white' : 'is-black'}`}
+        style={{ height: `${bottomHeightPct}%` }}
+      >
+        {((whiteIsBottom && !isBlackLead) || (!whiteIsBottom && !isWhiteLead)) && (
+          <span className="play-eval-text is-bottom-text">{displayText}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function BoardPlayerBar(props: {
   side: Color;
   isTop: boolean;
@@ -226,6 +313,9 @@ function PlayBoard() {
   const currentTurn = turnOf(fen);
   const material = useMemo(() => calculateMaterial(fen), [fen]);
 
+  const currentEval = game?.analysis?.evals?.[ply] ?? null;
+  const showEvalBar = !!currentEval;
+
   const topIsUser = topSide === player;
   const topName = topIsUser ? 'You' : 'Stockfish';
   const topElo = topIsUser ? undefined : game?.elo;
@@ -244,14 +334,35 @@ function PlayBoard() {
   const bottomCapturedColor: Color = bottomSide === 'white' ? 'black' : 'white';
   const bottomAdvantage = bottomSide === 'white' ? material.diff : -material.diff;
 
+  const judgmentBadge = useMemo(() => {
+    if (!reviews || ply <= 0 || !lastUci) return null;
+    const rev = reviews[ply - 1];
+    if (!rev?.judgment) return null;
+    return {
+      judgment: rev.judgment,
+      square: lastUci.slice(2, 4),
+    };
+  }, [reviews, ply, lastUci]);
+
   const shapes: DrawShape[] = [];
   if (hint && live && hint.ply === (game?.moves.length ?? -1)) {
     shapes.push({ orig: hint.uci.slice(0, 2) as Key, dest: hint.uci.slice(2, 4) as Key, brush: 'green' });
   }
-  // Reviewing: the better move for the move just played, from where it started.
+
+  // Reviewing: show the mistake move and best move on the board
   const r = reviews && ply > 0 ? reviews[ply - 1] : null;
-  if (r?.judgment && r.best) {
-    shapes.push({ orig: r.best.slice(0, 2) as Key, dest: r.best.slice(2, 4) as Key, brush: 'green' });
+  if (r) {
+    if (r.judgment && lastUci) {
+      const orig = lastUci.slice(0, 2) as Key;
+      const dest = lastUci.slice(2, 4) as Key;
+      const brush = r.judgment === 'blunder' ? 'red' : 'yellow';
+      shapes.push({ orig, dest, brush });
+    }
+    if (r.best) {
+      const orig = r.best.slice(0, 2) as Key;
+      const dest = r.best.slice(2, 4) as Key;
+      shapes.push({ orig, dest, brush: 'green' });
+    }
   }
 
   return (
@@ -267,44 +378,54 @@ function PlayBoard() {
         capturedColor={topCapturedColor}
         advantage={topAdvantage}
       />
-      <div className="play-board-surface">
-        <Chessground
-          dimensionsRef={cardRef}
-          orientation={orientation}
-          fen={fen}
-          turnColor={currentTurn}
-          lastMove={lastUci ? [lastUci.slice(0, 2) as Key, lastUci.slice(2, 4) as Key] : undefined}
-          check={check}
-          movable={{
-            free: false,
-            color: canMove ? player : undefined,
-            dests: canMove ? fenToDests(fen) : new Map(),
-            showDests: true,
-            events: {
-              after: (orig: Key, dest: Key) => {
-                if (isPromotionMove(fen, orig, dest)) setPromo({ from: orig, to: dest });
-                else move(orig + dest);
+      <div className="play-board-row">
+        {showEvalBar && <VerticalEvalBar eval={currentEval} orientation={orientation} />}
+        <div className="play-board-surface">
+          <Chessground
+            dimensionsRef={cardRef}
+            orientation={orientation}
+            fen={fen}
+            turnColor={currentTurn}
+            lastMove={lastUci ? [lastUci.slice(0, 2) as Key, lastUci.slice(2, 4) as Key] : undefined}
+            check={check}
+            movable={{
+              free: false,
+              color: canMove ? player : undefined,
+              dests: canMove ? fenToDests(fen) : new Map(),
+              showDests: true,
+              events: {
+                after: (orig: Key, dest: Key) => {
+                  if (isPromotionMove(fen, orig, dest)) setPromo({ from: orig, to: dest });
+                  else move(orig + dest);
+                },
               },
-            },
-          }}
-          premovable={{ enabled: false }}
-          drawable={{ autoShapes: shapes }}
-        />
-        {promo && (
-          <PromotionOverlay
-            dest={promo.to}
-            color={player}
-            onCancel={() => {
-              setPromo(null);
-              usePlayStore.setState((s) => ({ fens: [...s.fens] })); // redraw: put the pawn back
             }}
-            onPick={(role) => {
-              const { from, to } = promo;
-              setPromo(null);
-              move(from + to + PROMO_LETTER[role]);
-            }}
+            premovable={{ enabled: false }}
+            drawable={{ autoShapes: shapes }}
           />
-        )}
+          {judgmentBadge && (
+            <BoardJudgmentBadge
+              judgment={judgmentBadge.judgment}
+              square={judgmentBadge.square}
+              orientation={orientation}
+            />
+          )}
+          {promo && (
+            <PromotionOverlay
+              dest={promo.to}
+              color={player}
+              onCancel={() => {
+                setPromo(null);
+                usePlayStore.setState((s) => ({ fens: [...s.fens] })); // redraw: put the pawn back
+              }}
+              onPick={(role) => {
+                const { from, to } = promo;
+                setPromo(null);
+                move(from + to + PROMO_LETTER[role]);
+              }}
+            />
+          )}
+        </div>
       </div>
       <BoardPlayerBar
         side={bottomSide}
