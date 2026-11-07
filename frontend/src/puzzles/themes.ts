@@ -1,9 +1,43 @@
 // Display names for the Lichess puzzle themes (as Lichess names them),
-// grouped for the picker. Themes not listed here (advantage, crushing,
+// grouped for the topic picker, in the order it shows them. Themes not listed here (advantage, crushing,
 // master, …) describe the result or the source game rather than a skill,
 // so they aren't offered as filters and don't count towards "weak themes".
 
 export const THEME_GROUPS: { label: string; themes: [string, string][] }[] = [
+  {
+    label: 'Checkmates',
+    themes: [
+      ['mate', 'Checkmate (any)'],
+      ['mateIn1', 'Mate in 1'],
+      ['mateIn2', 'Mate in 2'],
+      ['mateIn3', 'Mate in 3'],
+      ['mateIn4', 'Mate in 4'],
+      ['mateIn5', 'Mate in 5 or more'],
+      ['backRankMate', 'Back rank mate'],
+      ['smotheredMate', 'Smothered mate'],
+      ['anastasiaMate', 'Anastasia mate'],
+      ['arabianMate', 'Arabian mate'],
+      ['bodenMate', 'Boden mate'],
+      ['doubleBishopMate', 'Double bishop mate'],
+      ['dovetailMate', 'Dovetail mate'],
+      ['hookMate', 'Hook mate'],
+      ['killBoxMate', 'Kill box mate'],
+      ['vukovicMate', 'Vukovic mate'],
+      ['cornerMate', 'Corner mate'],
+      ['triangleMate', 'Triangle mate'],
+      ['balestraMate', 'Balestra mate'],
+      ['blindSwineMate', 'Blind swine mate'],
+    ],
+  },
+  {
+    label: 'Length',
+    themes: [
+      ['oneMove', '1 move'],
+      ['short', '2 moves'],
+      ['long', '3 moves'],
+      ['veryLong', '4+ moves'],
+    ],
+  },
   {
     label: 'Tactics',
     themes: [
@@ -37,31 +71,6 @@ export const THEME_GROUPS: { label: string; themes: [string, string][] }[] = [
     ],
   },
   {
-    label: 'Checkmates',
-    themes: [
-      ['mate', 'Checkmate (any)'],
-      ['mateIn1', 'Mate in 1'],
-      ['mateIn2', 'Mate in 2'],
-      ['mateIn3', 'Mate in 3'],
-      ['mateIn4', 'Mate in 4'],
-      ['mateIn5', 'Mate in 5 or more'],
-      ['backRankMate', 'Back rank mate'],
-      ['smotheredMate', 'Smothered mate'],
-      ['anastasiaMate', 'Anastasia mate'],
-      ['arabianMate', 'Arabian mate'],
-      ['bodenMate', 'Boden mate'],
-      ['doubleBishopMate', 'Double bishop mate'],
-      ['dovetailMate', 'Dovetail mate'],
-      ['hookMate', 'Hook mate'],
-      ['killBoxMate', 'Kill box mate'],
-      ['vukovicMate', 'Vukovic mate'],
-      ['cornerMate', 'Corner mate'],
-      ['triangleMate', 'Triangle mate'],
-      ['balestraMate', 'Balestra mate'],
-      ['blindSwineMate', 'Blind swine mate'],
-    ],
-  },
-  {
     label: 'Phase',
     themes: [
       ['opening', 'Opening'],
@@ -75,15 +84,6 @@ export const THEME_GROUPS: { label: string; themes: [string, string][] }[] = [
       ['queenRookEndgame', 'Queen and rook endgame'],
     ],
   },
-  {
-    label: 'Length',
-    themes: [
-      ['oneMove', 'One move'],
-      ['short', 'Short (2 moves)'],
-      ['long', 'Long (3 moves)'],
-      ['veryLong', 'Very long (4+ moves)'],
-    ],
-  },
 ];
 
 export const THEME_LABELS: Record<string, string> = Object.fromEntries(
@@ -91,7 +91,9 @@ export const THEME_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 // Skills worth drilling: tactics and mates, not phase or length.
-export const SKILL_THEMES = new Set(THEME_GROUPS.slice(0, 2).flatMap((g) => g.themes.map(([k]) => k)));
+export const SKILL_THEMES = new Set(
+  THEME_GROUPS.filter((g) => g.label === 'Tactics' || g.label === 'Checkmates').flatMap((g) => g.themes.map(([k]) => k)),
+);
 
 export function themeLabel(theme: string): string {
   return THEME_LABELS[theme] ?? theme;

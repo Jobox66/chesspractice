@@ -5,6 +5,7 @@ import { Chess } from 'chessops/chess';
 import { parseFen } from 'chessops/fen';
 import {
   CheckCircle2Icon,
+  ChevronRightIcon,
   CircleHelpIcon,
   CloudIcon,
   ExternalLinkIcon,
@@ -23,7 +24,8 @@ import { PromotionOverlay, type PromoRole } from '../components/PromotionOverlay
 import { useAuthStore } from '../store/auth';
 import { fenToDests, isPromotionMove } from '../util/chess';
 import { DIFFICULTY_OFFSET, usePuzzleStore, duePuzzles, type Difficulty, type Run } from './store';
-import { THEME_GROUPS, SKILL_THEMES, themeLabel } from './themes';
+import { SKILL_THEMES, themeLabel } from './themes';
+import { TopicPicker } from './TopicPicker';
 import { ratingSeries, themeCounts, todayStats, weakThemes } from './stats';
 import { RatingSparkline } from './RatingSparkline';
 import '../css/layout.css';
@@ -343,6 +345,7 @@ function SidePanel() {
   const counts = useMemo(() => (set ? themeCounts(set) : new Map<string, number>()), [set]);
   const dueCount = useMemo(() => (set ? duePuzzles(set, progress, null).length : 0), [set, progress]);
   const weak = useMemo(() => (set ? weakThemes(set, progress) : []), [set, progress]);
+  const [picking, setPicking] = useState(false);
   const today = todayStats(attempts);
   const series = ratingSeries(attempts);
   const provisional = rating.rd > 110;
@@ -400,27 +403,15 @@ function SidePanel() {
         </div>
       )}
 
-      <label className="puzzle-field">
-        <span className="puzzle-label">Theme</span>
-        <select
-          className="puzzle-select"
-          value={settings.theme ?? ''}
-          onChange={(e) => updateSettings({ theme: e.target.value || null })}
-        >
-          <option value="">All ({set?.puzzles.length ?? 0})</option>
-          {THEME_GROUPS.map((g) => (
-            <optgroup key={g.label} label={g.label}>
-              {g.themes
-                .filter(([key]) => counts.has(key))
-                .map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label} ({counts.get(key)})
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
+      <div className="puzzle-field">
+        <span className="puzzle-label">Topic</span>
+        <button type="button" className="puzzle-select puzzle-topic-btn" onClick={() => setPicking(true)}>
+          <span>{settings.theme ? themeLabel(settings.theme) : 'All puzzles'}</span>
+          <span className="puzzle-muted">{settings.theme ? counts.get(settings.theme) ?? 0 : set?.puzzles.length ?? 0}</span>
+          <ChevronRightIcon size={16} />
+        </button>
+        {picking && <TopicPicker onClose={() => setPicking(false)} />}
+      </div>
 
       {weak.length > 0 && (
         <div className="puzzle-field">

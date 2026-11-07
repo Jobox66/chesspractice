@@ -35,25 +35,30 @@ export interface ThemeStat {
   successRate: number;
 }
 
-// Skill themes with the lowest first-try success, among those tried often
-// enough to say anything. "First try" is the puzzle's first recorded result,
-// approximated from progress: a puzzle that ever had a card was missed.
-export function weakThemes(set: PuzzleSet, progress: Record<string, Progress>, minTried = 5, limit = 3): ThemeStat[] {
+// Per theme: puzzles tried and solved on the first try. "First try" is the
+// puzzle's first recorded result, approximated from progress: a puzzle that
+// ever had a card was missed.
+export function themeTally(set: PuzzleSet, progress: Record<string, Progress>): Map<string, { tried: number; ok: number }> {
   const tally = new Map<string, { tried: number; ok: number }>();
   for (const [id, p] of Object.entries(progress)) {
     const puzzle = set.byId.get(id);
     if (!puzzle) continue;
     const firstTry = !p.card && p.successes > 0;
     for (const t of puzzle.themes) {
-      if (!SKILL_THEMES.has(t)) continue;
       const row = tally.get(t) ?? { tried: 0, ok: 0 };
       row.tried++;
       if (firstTry) row.ok++;
       tally.set(t, row);
     }
   }
-  return [...tally.entries()]
-    .filter(([, r]) => r.tried >= minTried)
+  return tally;
+}
+
+// Skill themes with the lowest first-try success, among those tried often
+// enough to say anything.
+export function weakThemes(set: PuzzleSet, progress: Record<string, Progress>, minTried = 5, limit = 3): ThemeStat[] {
+  return [...themeTally(set, progress).entries()]
+    .filter(([theme, r]) => SKILL_THEMES.has(theme) && r.tried >= minTried)
     .map(([theme, r]) => ({ theme, attempts: r.tried, successRate: r.ok / r.tried }))
     .sort((a, b) => a.successRate - b.successRate)
     .slice(0, limit);

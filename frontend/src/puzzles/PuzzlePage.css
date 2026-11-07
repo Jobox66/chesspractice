@@ -442,3 +442,163 @@
     transform: rotate(360deg);
   }
 }
+
+/* ---------- topic picker ---------- */
+
+.puzzle-topic-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.puzzle-topic-btn > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.puzzle-topic-btn:hover {
+  border-color: var(--c-gray-400);
+}
+
+.topic-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--c-backdrop);
+}
+
+.topic-sheet {
+  width: min(56rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border: var(--border-w) solid var(--c-line);
+  border-radius: 0.75rem;
+  background: var(--c-surface);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.3);
+}
+
+.topic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topic-head h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--c-gray-900);
+}
+
+.topic-close {
+  display: inline-flex;
+  padding: 0.25rem;
+  border: none;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--c-gray-500);
+  cursor: pointer;
+}
+
+.topic-close:hover {
+  background: var(--c-recessed);
+  color: var(--c-gray-900);
+}
+
+.topic-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-gray-500);
+}
+
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.topic-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.625rem 0.75rem;
+  border: var(--border-w) solid transparent;
+  border-radius: 0.5rem;
+  background: var(--c-recessed);
+  font: inherit;
+  text-align: start;
+  color: var(--c-gray-800);
+  cursor: pointer;
+  transition: border-color 120ms, background-color 120ms;
+}
+
+.topic-tile:hover {
+  border-color: var(--c-gray-400);
+}
+
+.topic-tile.is-active {
+  border-color: var(--c-brand-blue);
+  background: color-mix(in srgb, var(--c-brand-blue) 12%, var(--c-recessed));
+}
+
+.topic-name {
+  font-weight: 600;
+  color: var(--c-gray-900);
+}
+
+.topic-meta {
+  font-size: 0.75rem;
+  color: var(--c-gray-500);
+}
+
+/* share of the topic's puzzles you've done */
+.topic-bar {
+  display: block;
+  height: 0.1875rem;
+  margin-top: 0.125rem;
+  border-radius: 999px;
+  background: var(--c-line);
+  overflow: hidden;
+}
+
+.topic-bar span {
+  display: block;
+  height: 100%;
+  background: var(--c-brand-blue);
+}
+
+.topic-all {
+  align-self: flex-start;
+  min-width: 10.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .topic-backdrop {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .topic-sheet {
+    border-radius: 0;
+  }
+
+  .topic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
