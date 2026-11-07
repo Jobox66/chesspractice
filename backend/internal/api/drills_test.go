@@ -89,6 +89,16 @@ func TestDrillAttemptRoundTrip(t *testing.T) {
 	if rr.Code != http.StatusOK || strings.Contains(rr.Body.String(), "aB3x9") {
 		t.Errorf("endgame leaked puzzle data: %d %s", rr.Code, rr.Body.String())
 	}
+
+	// Mistakes from your own games: "<gameId>-<ply>" ids, a track of their own.
+	rr = serve(mux, withSession(newJSONRequest("POST", "/drills/mistake/attempts", `{"itemId":"mh2k9x1abc-23","success":false,"card":{"due":"2026-01-02T00:00:00Z"}}`), sid))
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("mistake attempt: status = %d %s", rr.Code, rr.Body.String())
+	}
+	rr = serve(mux, withSession(httptest.NewRequest("GET", "/drills/mistake", nil), sid))
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), "mh2k9x1abc-23") || strings.Contains(rr.Body.String(), "aB3x9") {
+		t.Errorf("mistake state: %d %s", rr.Code, rr.Body.String())
+	}
 }
 
 func TestDrillAttemptValidation(t *testing.T) {

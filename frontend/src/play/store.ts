@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { INITIAL_FEN } from 'chessops/fen';
 import { getEngine, lowSkill, MIN_UCI_ELO, type Engine } from './engine';
 import { fenAfter, gameStatus, legalUci, replay, sanOf, scoreText, turnOf, type Color, type Game, type GameResult } from './game';
-import { analyseGame } from './analysis';
+import { analyseGame, type Analysis } from './analysis';
 import { fetchGames, HttpError, removeGame, uploadGame } from './sync';
 
 export const MIN_ELO = 800;
@@ -109,6 +109,8 @@ interface PlayState extends Shown {
   deleteGame: (id: string) => void;
   analyse: () => void;
   cancelAnalysis: () => void;
+  // Attach an analysis run elsewhere (the mistakes trainer) to a saved game.
+  saveAnalysis: (id: string, analysis: Analysis) => void;
 }
 
 function initialGameState(): Shown {
@@ -254,6 +256,11 @@ export const usePlayStore = create<PlayState>((set, get) => {
     },
 
     loadLibrary: async (username) => {
+      // Already loaded (or loading) for this user, e.g. by the mistakes
+      // page: keep it, along with any game open for review. A load that
+      // fell back to the local copy is retried.
+      const s = get();
+      if (s.owner === username && (s.libraryStatus === 'loading' || (s.libraryStatus === 'ready' && !s.syncError))) return;
       const t = ++libraryToken;
       set({ owner: username, libraryStatus: 'loading', syncError: null, review: null, viewPly: null });
       const local = loadList<Game>(KEYS.history(username));
@@ -458,6 +465,11 @@ export const usePlayStore = create<PlayState>((set, get) => {
     },
 
     cancelAnalysis: () => set({ analysing: null }),
+
+    saveAnalysis: (id, analysis) => {
+      const game = get().history.find((g) => g.id === id);
+      if (game) storeGame({ ...game, analysis });
+    },
   };
 });
 

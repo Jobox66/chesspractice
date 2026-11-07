@@ -1,13 +1,14 @@
-// Where puzzle progress lives: the backend (/drills/puzzle → Neon) when
+// Where drill progress lives: the backend (/drills/<kind> → Neon) when
 // signed in, IndexedDB otherwise — the same split as the repertoire.
+// Puzzles by default; the mistakes trainer passes its own kind and key.
 
 import { get, set } from 'idb-keyval';
 import type { Card } from '../util/srs';
 import type { Rating } from './glicko';
 
 const API = import.meta.env.VITE_API_URL;
-const KIND = 'puzzle';
-const IDB_KEY = 'puzzle-progress-v1';
+export type DrillKind = 'puzzle' | 'mistake';
+const IDB_KEYS: Record<DrillKind, string> = { puzzle: 'puzzle-progress-v1', mistake: 'mistake-progress-v1' };
 // Matches the server's history window.
 const MAX_LOCAL_ATTEMPTS = 1000;
 
@@ -58,8 +59,8 @@ export class HttpError extends Error {
   }
 }
 
-export async function fetchServerState(): Promise<DrillState> {
-  const res = await fetch(`${API}/drills/${KIND}`, { credentials: 'include' });
+export async function fetchServerState(kind: DrillKind = 'puzzle'): Promise<DrillState> {
+  const res = await fetch(`${API}/drills/${kind}`, { credentials: 'include' });
   if (!res.ok) throw new HttpError(res.status);
   const raw = await res.json();
   const progress: Record<string, Progress> = {};
@@ -75,8 +76,8 @@ export async function fetchServerState(): Promise<DrillState> {
   return { rating: raw.rating ?? null, progress, attempts: raw.attempts ?? [] };
 }
 
-export async function postAttempt(a: AttemptPost): Promise<void> {
-  const res = await fetch(`${API}/drills/${KIND}/attempts`, {
+export async function postAttempt(a: AttemptPost, kind: DrillKind = 'puzzle'): Promise<void> {
+  const res = await fetch(`${API}/drills/${kind}/attempts`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -85,16 +86,16 @@ export async function postAttempt(a: AttemptPost): Promise<void> {
   if (!res.ok) throw new HttpError(res.status);
 }
 
-export async function loadLocalState(): Promise<DrillState> {
-  const raw = await get(IDB_KEY).catch(() => undefined);
+export async function loadLocalState(kind: DrillKind = 'puzzle'): Promise<DrillState> {
+  const raw = await get(IDB_KEYS[kind]).catch(() => undefined);
   if (!raw) return { rating: null, progress: {}, attempts: [] };
   const progress: Record<string, Progress> = {};
   for (const [id, p] of Object.entries<any>(raw.progress ?? {})) progress[id] = { ...p, card: reviveCard(p.card) };
   return { rating: raw.rating ?? null, progress, attempts: raw.attempts ?? [] };
 }
 
-export async function saveLocalState(state: DrillState): Promise<void> {
-  await set(IDB_KEY, {
+export async function saveLocalState(state: DrillState, kind: DrillKind = 'puzzle'): Promise<void> {
+  await set(IDB_KEYS[kind], {
     rating: state.rating,
     progress: state.progress,
     attempts: state.attempts.slice(-MAX_LOCAL_ATTEMPTS),
