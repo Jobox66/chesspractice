@@ -939,7 +939,16 @@ function MovesPanel() {
   };
 
   useEffect(() => {
-    listRef.current?.querySelector('.is-current')?.scrollIntoView({ block: 'nearest' });
+    const list = listRef.current;
+    const active = list?.querySelector<HTMLElement>('.is-current');
+    if (!list || !active) return;
+    const listRect = list.getBoundingClientRect();
+    const itemRect = active.getBoundingClientRect();
+    if (itemRect.top < listRect.top) {
+      list.scrollTop += itemRect.top - listRect.top - 4;
+    } else if (itemRect.bottom > listRect.bottom) {
+      list.scrollTop += itemRect.bottom - listRect.bottom + 4;
+    }
   }, [current, sans.length]);
 
   const rows: [number, string, string | undefined][] = [];

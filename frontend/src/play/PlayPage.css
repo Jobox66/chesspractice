@@ -1,6 +1,10 @@
 /* Play page: shares the puzzle page's grid and panels (PuzzlePage.css);
    only what's specific to a game lives here. */
 
+.play-main {
+  overflow-anchor: none;
+}
+
 /* Phones: the move list (and the review) right under the board, settings
    and saved games after it. */
 @media (max-width: 767.98px) {
@@ -457,6 +461,7 @@
 .play-moves-panel {
   gap: 0.5rem;
   min-height: 0;
+  overflow-anchor: none;
 }
 
 .play-moves-head {
@@ -546,8 +551,9 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 22rem;
+  max-height: 16rem;
   overflow-y: auto;
+  overflow-anchor: none;
   font-variant-numeric: tabular-nums;
 }
 
