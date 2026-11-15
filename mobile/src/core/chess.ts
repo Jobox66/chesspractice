@@ -69,4 +69,17 @@ export function playSan(pos: Chess, san: string): { pos: Chess; fen: string; cap
   return { pos: next, fen: makeFen(next.toSetup()), capture };
 }
 
+const PROMO_CHAR: Record<Role, string> = {
+  pawn: 'p',
+  knight: 'n',
+  bishop: 'b',
+  rook: 'r',
+  queen: 'q',
+  king: 'k',
+};
+
+export function squaresToUci(from: Square, to: Square, promotion?: Role): string {
+  return from + to + (promotion ? PROMO_CHAR[promotion] : '');
+}
+
 export const colorFromPly = (ply: number) => (ply % 2 === 1 ? 'white' : 'black');

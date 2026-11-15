@@ -60,7 +60,7 @@ export default function Home() {
       <FlatList
         data={repertoire}
         keyExtractor={(c) => c.uuid}
-        contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 90 + insets.bottom }}
+        contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 145 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void refresh()} />}
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
@@ -120,12 +120,19 @@ export default function Home() {
                   style={{ flex: 1 }}
                   onPress={() => router.push({ pathname: '/train/[id]', params: { id: c.uuid, mode: 'recall' } })}
                 />
+                <Button
+                  small
+                  kind="secondary"
+                  title="Tree"
+                  style={{ flex: 0.85 }}
+                  onPress={() => router.push({ pathname: '/train/[id]', params: { id: c.uuid, mode: 'explore' } })}
+                />
               </View>
             </Card>
           </Pressable>
         )}
       />
-      <View style={[styles.fab, { bottom: 16 + insets.bottom }]}>
+      <View style={[styles.fab, { bottom: 72 + insets.bottom }]}>
         <Button title="+ Add chapter" onPress={() => router.push('/add')} />
       </View>
 

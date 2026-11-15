@@ -27,7 +27,7 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "typecheck": "tsc --noEmit",
     "prebuild": "expo prebuild -p android --clean",
     "build:apk": "eas build -p android --profile preview"

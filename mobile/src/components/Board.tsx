@@ -10,9 +10,11 @@ import { makeSquare, parseSquare } from 'chessops';
 import { PIECE_SVGS } from '../data/pieces';
 import { isPromotion, legalDests, positionFromFen, type Square } from '../core/chess';
 import type { Color } from '../core/types';
+import { JUDGMENT_COLOR, JUDGMENT_SYMBOL, type Judgment } from '../play/analysis';
 import { theme } from './theme';
 
 export type Arrow = { from: Square; to?: Square; color: string };
+export type BoardBadge = { square: Square; judgment: Judgment };
 
 type Props = {
   fen: string;
@@ -22,6 +24,8 @@ type Props = {
   arrows?: Arrow[];
   // squares tinted with a color (e.g. a wrong guess)
   marks?: { square: Square; color: string }[];
+  // Chess.com-style move judgment badge on the destination square
+  badge?: BoardBadge | null;
   movable: boolean;
   // when set, only this move is accepted (learn mode / after a miss)
   onlyMove?: [Square, Square] | null;
@@ -51,12 +55,18 @@ function squareXY(s: Square, sq: number, orientation: Color) {
   return { x: col * sq, y: row * sq };
 }
 
-export function Board({ fen, orientation, size, lastMove, arrows, marks, movable, onlyMove, onMove }: Props) {
+export function Board({ fen, orientation, size, lastMove, arrows, marks, badge, movable, onlyMove, onMove }: Props) {
   const sq = size / 8;
   const pos = useMemo(() => positionFromFen(fen), [fen]);
   const [selected, setSelected] = useState<Square | null>(null);
   const [drag, setDrag] = useState<{ from: Square; x: number; y: number } | null>(null);
   const [promo, setPromo] = useState<{ from: Square; to: Square } | null>(null);
+
+  const checkSquare = useMemo<Square | null>(() => {
+    if (!pos || !pos.isCheck()) return null;
+    const k = pos.board.kingOf(pos.turn);
+    return k !== undefined ? makeSquare(k) : null;
+  }, [pos]);
 
   // Reset selection whenever the position changes.
   const fenRef = useRef(fen);
@@ -179,6 +189,7 @@ export function Board({ fen, orientation, size, lastMove, arrows, marks, movable
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {squares}
           {lastMove?.map((s, i) => tint(s, theme.lastMove, `lm${i}`))}
+          {checkSquare && tint(checkSquare, 'rgba(235, 64, 52, 0.55)', 'chk')}
           {marks?.map((m, i) => tint(m.square, m.color, `mk${i}`))}
           {selected && tint(selected, theme.selected, 'sel')}
           {/* coordinates */}
@@ -216,6 +227,9 @@ export function Board({ fen, orientation, size, lastMove, arrows, marks, movable
             })}
             {arrows?.map((a, i) => <ArrowShape key={i} arrow={a} sq={sq} orientation={orientation} />)}
           </Svg>
+          {badge && (
+            <JudgmentPin badge={badge} sq={sq} orientation={orientation} />
+          )}
           {drag && (
             <View style={{ position: 'absolute', left: drag.x - sq * 0.6, top: drag.y - sq * 0.9 }}>
               <Piece id={pieces.find((p) => p.square === drag.from)?.id ?? 'wP'} size={sq * 1.2} />
@@ -291,8 +305,48 @@ function PromotionPicker({ color, onPick }: { color: Color; onPick: (r: Role | n
   );
 }
 
+function JudgmentPin({ badge, sq, orientation }: { badge: BoardBadge; sq: number; orientation: Color }) {
+  const { x, y } = squareXY(badge.square, sq, orientation);
+  const pinSize = Math.max(18, Math.round(sq * 0.42));
+  const bg = JUDGMENT_COLOR[badge.judgment];
+  const symbol = JUDGMENT_SYMBOL[badge.judgment];
+  return (
+    <View
+      style={[
+        styles.judgmentPin,
+        {
+          width: pinSize,
+          height: pinSize,
+          borderRadius: pinSize / 2,
+          backgroundColor: bg,
+          left: Math.min(sq * 8 - pinSize - 1, x + sq - pinSize * 0.72),
+          top: Math.max(1, y - pinSize * 0.22),
+        },
+      ]}
+    >
+      <Text style={[styles.judgmentPinText, { fontSize: Math.max(9, Math.round(pinSize * 0.48)) }]}>{symbol}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   coord: { position: 'absolute', fontSize: 10, fontWeight: '700' },
+  judgmentPin: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.35,
+    shadowRadius: 2,
+  },
+  judgmentPinText: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
   promoBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.45)',

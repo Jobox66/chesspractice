@@ -52,6 +52,9 @@ interface AppState {
   renameChapter: (uuid: string, name: string) => void;
   deleteChapter: (uuid: string) => void;
   setCard: (uuid: string, path: string, card: Card) => void;
+  addTreeMove: (uuid: string, parentPath: string, node: TrainableNode) => void;
+  setNodeComment: (uuid: string, path: string, comment: string) => void;
+  deleteTreeNode: (uuid: string, path: string) => void;
 }
 
 // Seed for a first launch, so the app isn't empty: the first library
@@ -291,6 +294,45 @@ export const useApp = create<AppState>((set, get) => {
       touch(uuid);
       if (get().user) {
         syncSocket.send({ type: 'training_updated', chapterId: uuid, path, username: key, card });
+      } else {
+        persistLocal(uuid);
+      }
+    },
+
+    addTreeMove: (uuid, parentPath, node) => {
+      const c = get().chapter(uuid);
+      const parent = c && nodeAtPathOrNull(c.root, parentPath);
+      if (!c || !parent) return;
+      if (parent.children.some((ch) => ch.data.id === node.data.id)) return;
+      parent.children.push(node);
+      touch(uuid);
+      if (get().user) {
+        syncSocket.send({ type: 'move_created', chapterId: uuid, path: parentPath, move: node.data });
+      } else {
+        persistLocal(uuid);
+      }
+    },
+
+    setNodeComment: (uuid, path, comment) => {
+      const c = get().chapter(uuid);
+      const node = c && nodeAtPathOrNull(c.root, path);
+      if (!c || !node) return;
+      node.data.comment = comment;
+      touch(uuid);
+      if (get().user) {
+        syncSocket.send({ type: 'set_comment', chapterId: uuid, path, comment });
+      } else {
+        persistLocal(uuid);
+      }
+    },
+
+    deleteTreeNode: (uuid, path) => {
+      const c = get().chapter(uuid);
+      if (!c || !path) return;
+      deleteNodeAt(c.root, path);
+      touch(uuid);
+      if (get().user) {
+        syncSocket.send({ type: 'node_deleted', chapterId: uuid, path });
       } else {
         persistLocal(uuid);
       }

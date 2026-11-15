@@ -51,8 +51,7 @@ jobs:
           FIREBASE_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
         run: |
           if [ -z "$FIREBASE_KEY" ]; then
-            echo "::error::Missing secret EXPO_PUBLIC_FIREBASE_API_KEY (Settings -> Secrets and variables -> Actions)"
-            exit 1
+            echo "::warning::Secret EXPO_PUBLIC_FIREBASE_API_KEY is not set; Google login will be disabled (offline & sync-key login still work)."
           fi
 
       # Same file as a local mobile/.env; read when the JS bundle is built.

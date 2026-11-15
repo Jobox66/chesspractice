@@ -79,3 +79,39 @@ export async function saveSyncKey(key: string | null): Promise<void> {
   if (key) await SecureStore.setItemAsync(SYNC_KEY, key);
   else await SecureStore.deleteItemAsync(SYNC_KEY);
 }
+
+// Generic JSON file storage in Paths.document/store/ for Play, Puzzles, Mistakes, Settings.
+function storeDir(): Directory {
+  const dir = new Directory(Paths.document, 'store');
+  if (!dir.exists) dir.create({ idempotent: true, intermediates: true });
+  return dir;
+}
+
+function safeFileName(key: string): string {
+  return key.replace(/[^a-zA-Z0-9._-]/g, '_') + '.json';
+}
+
+export function readJson<T>(key: string, fallback: T): T {
+  try {
+    const file = new File(storeDir(), safeFileName(key));
+    if (!file.exists) return fallback;
+    return JSON.parse(file.textSync()) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export function writeJson(key: string, value: unknown): void {
+  try {
+    const file = new File(storeDir(), safeFileName(key));
+    if (value == null) {
+      if (file.exists) file.delete();
+      return;
+    }
+    if (!file.exists) file.create({ overwrite: true });
+    file.writeSync(JSON.stringify(value));
+  } catch {
+    // ignore storage errors
+  }
+}
+
