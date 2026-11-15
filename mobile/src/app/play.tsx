@@ -87,11 +87,11 @@ export default function PlayScreen() {
     const evals: PlyEval[] = [];
     const best: string[] = [];
     for (let i = 0; i < fens.length; i++) {
-      evals.push(s.liveEvals[i] ?? { cp: 0, mate: null });
-      best.push('');
+      evals.push(s.liveEvals[i] ?? { cp: null, mate: null });
+      best.push(s.liveBest[i] ?? '');
     }
     return { v: 1, movetime: 150, evals, best };
-  }, [game?.analysis, fens, s.liveEvals]);
+  }, [game?.analysis, fens, s.liveEvals, s.liveBest]);
 
   const reviewed = useMemo<MoveReview[]>(() => {
     if (!syntheticAnalysis || moves.length === 0) return [];
@@ -101,8 +101,14 @@ export default function PlayScreen() {
   const currentReview = curPly > 0 ? reviewed[curPly - 1] : undefined;
   const currentEval = useMemo<PlyEval | undefined>(() => {
     if (game?.analysis?.evals[curPly]) return game.analysis.evals[curPly];
-    return s.liveEvals[curPly] ?? s.liveEvals[totalPly] ?? { cp: 0, mate: null };
-  }, [game?.analysis, s.liveEvals, curPly, totalPly]);
+    const direct = s.liveEvals[curPly];
+    if (direct && (direct.cp != null || direct.mate != null)) return direct;
+    for (let i = curPly - 1; i >= 0; i--) {
+      const prev = s.liveEvals[i];
+      if (prev && (prev.cp != null || prev.mate != null)) return prev;
+    }
+    return { cp: 0, mate: null };
+  }, [game?.analysis, s.liveEvals, curPly]);
 
   const sansUpToPly = useMemo(() => sans.slice(0, curPly), [sans, curPly]);
   const detectedOpening = useMemo(() => detectOpening(sansUpToPly), [sansUpToPly]);

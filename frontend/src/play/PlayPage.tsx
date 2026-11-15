@@ -82,25 +82,27 @@ function moveNo(ply: number): string {
 function useReviews(): MoveReview[] | null {
   const { game, fens, sans } = useShown();
   const liveEvals = usePlayStore((s) => s.liveEvals);
+  const liveBest = usePlayStore((s) => s.liveBest);
   return useMemo(() => {
     if (game?.analysis && game.analysis.evals.length === fens.length) {
       return reviewMoves(game.moves, fens, game.analysis, sans);
     }
     if (fens.length > 1) {
       const syntheticEvals: { cp: number | null; mate: number | null }[] = fens.map(
-        (_, i) => liveEvals[i] ?? { cp: 0, mate: null },
+        (_, i) => liveEvals[i] ?? { cp: null, mate: null },
       );
+      const syntheticBest: string[] = fens.map((_, i) => liveBest[i] ?? '');
       const synthAnalysis: Analysis = {
         v: 1,
         movetime: 0,
         evals: syntheticEvals,
-        best: new Array(fens.length).fill(''),
+        best: syntheticBest,
       };
       const playedMoves = game?.moves ?? [];
       return reviewMoves(playedMoves, fens, synthAnalysis, sans);
     }
     return null;
-  }, [game, fens, sans, liveEvals]);
+  }, [game, fens, sans, liveEvals, liveBest]);
 }
 
 export default function PlayPage() {
@@ -335,12 +337,16 @@ function PlayBoard() {
   const currentTurn = turnOf(fen);
   const material = useMemo(() => calculateMaterial(fen), [fen]);
 
-  // Live evaluation fallback chain: analysis -> live Stockfish -> terminal -> material
+  // Live evaluation fallback chain: analysis -> live Stockfish -> terminal -> most recent known eval -> material
   const currentEval = useMemo(() => {
     if (game?.analysis?.evals?.[ply]) return game.analysis.evals[ply];
-    if (liveEvals?.[ply]) return liveEvals[ply];
+    if (liveEvals?.[ply] && (liveEvals[ply].cp != null || liveEvals[ply].mate != null)) return liveEvals[ply];
     const term = terminalEval(fen);
     if (term) return term;
+    for (let i = ply - 1; i >= 0; i--) {
+      const prev = liveEvals?.[i];
+      if (prev && (prev.cp != null || prev.mate != null)) return prev;
+    }
     return { cp: material.diff * 100, mate: null };
   }, [game?.analysis, liveEvals, ply, fen, material.diff]);
 

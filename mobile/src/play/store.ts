@@ -14,7 +14,7 @@ import {
   type Game,
   type GameResult,
 } from './game';
-import { analyseGame, type Analysis } from './analysis';
+import { analyseGame, terminalEval, type Analysis } from './analysis';
 import { fetchGames, HttpError, removeGame, uploadGame } from './sync';
 import { readJson, writeJson } from '../services/storage';
 
@@ -86,6 +86,7 @@ interface PlayState extends Shown {
   syncError: string | null;
   analysing: { id: string; done: number; total: number } | null;
   liveEvals: Record<number, { cp: number | null; mate: number | null }>;
+  liveBest: Record<number, string>;
 
   toggleFlip: () => void;
   initEngine: () => void;
@@ -188,24 +189,45 @@ export const usePlayStore = create<PlayState>((set, get) => {
     return true;
   }
 
-  async function evalCurrentPosition() {
+  function hasEval(ply: number): boolean {
+    const e = get().liveEvals[ply];
+    return !!e && (e.cp != null || e.mate != null);
+  }
+
+  async function evalPendingPlies() {
     const { game, fens, engine: status } = get();
-    if (!game || game.result || !engine || status !== 'ready') return;
-    const ply = fens.length - 1;
-    const fen = fens[ply];
-    if (get().liveEvals[ply]?.cp != null || get().liveEvals[ply]?.mate != null) return;
+    if (!game || !engine || status !== 'ready') return;
     const t = token();
-    try {
-      const res = await engine.search(fen, 'max', 'movetime 150');
-      if (token() !== t || !res.line) return;
-      const sign = turnOf(fen) === 'white' ? 1 : -1;
-      const evalWhite = {
-        cp: res.line.cp != null ? res.line.cp * sign : null,
-        mate: res.line.mate != null ? res.line.mate * sign : null,
-      };
-      set((s) => ({ liveEvals: { ...s.liveEvals, [ply]: evalWhite } }));
-    } catch {
-      // non-critical background search
+    const startPly = Math.max(0, fens.length - 4);
+    for (let ply = startPly; ply < fens.length; ply++) {
+      if (token() !== t || get().engine !== 'ready') return;
+      if (hasEval(ply)) continue;
+      const fen = fens[ply];
+      const term = terminalEval(fen);
+      if (term) {
+        set((s) => ({
+          liveEvals: { ...s.liveEvals, [ply]: term },
+          liveBest: { ...s.liveBest, [ply]: '' },
+        }));
+        continue;
+      }
+      try {
+        const res = await engine.search(fen, 'max', 'movetime 150');
+        if (token() !== t) return;
+        if (res.line) {
+          const sign = turnOf(fen) === 'white' ? 1 : -1;
+          const evalWhite = {
+            cp: res.line.cp != null ? res.line.cp * sign : null,
+            mate: res.line.mate != null ? res.line.mate * sign : null,
+          };
+          set((s) => ({
+            liveEvals: { ...s.liveEvals, [ply]: evalWhite },
+            liveBest: { ...s.liveBest, [ply]: res.bestmove ?? '' },
+          }));
+        }
+      } catch {
+        // non-critical background search
+      }
     }
   }
 
@@ -218,15 +240,19 @@ export const usePlayStore = create<PlayState>((set, get) => {
     set({ engine: 'thinking' });
     const started = Date.now();
     try {
-      const res = await engine.search(fen, engineStrength(game.elo), opponentGo(game.elo));
-      if (res.line) {
+      const strength = engineStrength(game.elo);
+      const res = await engine.search(fen, strength, opponentGo(game.elo));
+      if (strength === 'max' && res.line) {
         const sign = turnOf(fen) === 'white' ? 1 : -1;
         const evalWhite = {
           cp: res.line.cp != null ? res.line.cp * sign : null,
           mate: res.line.mate != null ? res.line.mate * sign : null,
         };
         const currentPly = fens.length - 1;
-        set((s) => ({ liveEvals: { ...s.liveEvals, [currentPly]: evalWhite } }));
+        set((s) => ({
+          liveEvals: { ...s.liveEvals, [currentPly]: evalWhite },
+          liveBest: { ...s.liveBest, [currentPly]: res.bestmove ?? '' },
+        }));
       }
       await sleep(Math.max(0, 250 - (Date.now() - started)));
       if (token() !== t) return;
@@ -238,7 +264,7 @@ export const usePlayStore = create<PlayState>((set, get) => {
     }
     if (get().engine === 'thinking') {
       set({ engine: 'ready' });
-      void evalCurrentPosition();
+      void evalPendingPlies();
     }
   }
 
@@ -257,6 +283,7 @@ export const usePlayStore = create<PlayState>((set, get) => {
     syncError: null,
     analysing: null,
     liveEvals: { 0: { cp: 20, mate: null } },
+    liveBest: {},
 
     toggleFlip: () => set({ flipped: !get().flipped }),
 
@@ -349,12 +376,13 @@ export const usePlayStore = create<PlayState>((set, get) => {
         hintLoading: false,
         flipped: false,
         liveEvals: { 0: { cp: 20, mate: null } },
+        liveBest: {},
       });
       persist();
       if (engine && status !== 'loading' && status !== 'error') {
         set({ engine: 'ready' });
         engine.newGame();
-        if (playerColor === 'white') void evalCurrentPosition();
+        if (playerColor === 'white') void evalPendingPlies();
         else void engineTurn();
       }
     },
@@ -374,6 +402,12 @@ export const usePlayStore = create<PlayState>((set, get) => {
       let moves = game.moves.slice(0, -1);
       while (moves.length > 0 && moves.length % 2 !== myParity) moves = moves.slice(0, -1);
       const { fens, sans } = replay(moves);
+      const keepEvals: Record<number, { cp: number | null; mate: number | null }> = {};
+      const keepBest: Record<number, string> = {};
+      for (let i = 0; i < fens.length; i++) {
+        if (get().liveEvals[i]) keepEvals[i] = get().liveEvals[i];
+        if (get().liveBest[i] != null) keepBest[i] = get().liveBest[i];
+      }
       set({
         game: { ...game, moves, takebacks: game.takebacks + 1 },
         fens,
@@ -381,6 +415,8 @@ export const usePlayStore = create<PlayState>((set, get) => {
         viewPly: null,
         hint: null,
         hintLoading: false,
+        liveEvals: keepEvals,
+        liveBest: keepBest,
         engine: status === 'thinking' ? 'ready' : status,
       });
       persist();

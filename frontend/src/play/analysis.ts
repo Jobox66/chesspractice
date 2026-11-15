@@ -172,30 +172,35 @@ export function reviewMoves(
     const before = a.evals[ply - 1];
     const after = a.evals[ply];
     const mover = turnOf(fens[ply - 1]);
+    const hasBothEvals =
+      (before.cp != null || before.mate != null) &&
+      (after.cp != null || after.mate != null);
     const toMover = (w: number) => (mover === 'white' ? w : 100 - w);
-    const drop = Math.max(0, toMover(winPct(before)) - toMover(winPct(after)));
+    const drop = hasBothEvals ? Math.max(0, toMover(winPct(before)) - toMover(winPct(after))) : 0;
     const played = moves[ply - 1];
     const engineBest = a.best[ply - 1] || null;
     const sameAsBest = !!engineBest && sameMove(played, engineBest);
 
     let judgment: Judgment | null = null;
 
-    // 1. Check if it's an opening book move
+    // 1. Opening book move
     if (sans && isPlyInBook(sans, ply)) {
       judgment = 'book';
+    } else if (!hasBothEvals) {
+      // Position not yet evaluated at full strength: don't guess a judgment
+      judgment = null;
+    } else if (sameAsBest) {
+      // Playing the engine's #1 move is never a mistake, even if depth variance shifts eval
+      judgment = isBrilliantMove(fens[ply - 1], fens[ply], drop, after, mover, ply) ? 'brilliant' : 'best';
     } else if (drop >= 30) {
       judgment = 'blunder';
     } else if (drop >= 20) {
       judgment = 'mistake';
     } else if (drop >= 10) {
       judgment = 'inaccuracy';
-    } else if (sameAsBest || drop < 3) {
-      if (isBrilliantMove(fens[ply - 1], fens[ply], drop, after, mover, ply)) {
-        judgment = 'brilliant';
-      } else {
-        judgment = 'best';
-      }
-    } else if (drop < 10) {
+    } else if (drop < 3) {
+      judgment = isBrilliantMove(fens[ply - 1], fens[ply], drop, after, mover, ply) ? 'brilliant' : 'best';
+    } else {
       judgment = 'good';
     }
 
@@ -207,8 +212,8 @@ export function reviewMoves(
       drop,
       best,
       bestSan: best ? safeSan(fens[ply - 1], best) : null,
-      evalBefore: evalText(before, mover),
-      evalAfter: evalText(after, mover),
+      evalBefore: hasBothEvals ? evalText(before, mover) : '…',
+      evalAfter: after.cp != null || after.mate != null ? evalText(after, mover) : '…',
     });
   }
   return out;
