@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createCard, reviewCard, dueAt, type Card } from '../core/srs';
+import { createCard, reviewCard, dueAt, type Card } from '../../../shared/srs';
 import type { Square } from '../core/chess';
 import { getEngine, REVIEW_MOVETIME } from '../play/engine';
 import { fenAfter, legalUci, replay, sanOf, turnOf } from '../../../shared/game';
@@ -11,11 +11,9 @@ import {
   loadLocalState,
   postAttempt,
   saveLocalState,
-  type AttemptLog,
-  type AttemptPost,
-  type Progress,
 } from '../puzzles/service';
-import { collectMistakes, unanalysedGames, type MistakeItem } from './items';
+import type { AttemptLog, AttemptPost, Progress } from '../../../shared/drills';
+import { collectMistakes, unanalysedGames, type MistakeItem } from '../../../shared/mistakeItems';
 
 const KIND = 'mistake' as const;
 export const ACCEPT_DROP = 10;

@@ -8,7 +8,7 @@
 //   username. Offline chapters are kept on the phone, untouched.
 import { create } from 'zustand';
 import { OPENING_LIBRARY } from '../../../shared/openingLibrary';
-import type { Card } from '../core/srs';
+import type { Card } from '../../../shared/srs';
 import { deleteNodeAt, nodeAtPathOrNull } from '../core/tree';
 import { chapterFromPgn, parseChapters, sortChapters, withCounts } from '../core/training';
 import { PLAYGROUND_KEY, type Chapter, type TrainableNode } from '../core/types';

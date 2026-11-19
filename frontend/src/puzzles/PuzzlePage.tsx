@@ -24,9 +24,9 @@ import { PromotionOverlay, type PromoRole } from '../components/PromotionOverlay
 import { useAuthStore } from '../store/auth';
 import { fenToDests, isPromotionMove } from '../util/chess';
 import { DIFFICULTY_OFFSET, usePuzzleStore, duePuzzles, type Difficulty, type Run } from './store';
-import { SKILL_THEMES, themeLabel } from './themes';
+import { SKILL_THEMES, themeLabel } from '../../../shared/puzzleThemes';
 import { TopicPicker } from './TopicPicker';
-import { ratingSeries, themeCounts, todayStats, weakThemes } from './stats';
+import { ratingSeries, themeCounts, todayStats, weakThemes } from '../../../shared/puzzleStats';
 import { RatingSparkline } from './RatingSparkline';
 import '../css/layout.css';
 import '../components/UserTip.css';

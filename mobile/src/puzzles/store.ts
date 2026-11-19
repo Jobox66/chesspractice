@@ -3,9 +3,10 @@ import { Chess, normalizeMove } from 'chessops/chess';
 import { makeFen, parseFen } from 'chessops/fen';
 import { makeSan } from 'chessops/san';
 import { makeUci, parseUci } from 'chessops/util';
-import { createCard, reviewCard, dueAt, type Card } from '../core/srs';
+import { createCard, reviewCard, dueAt, type Card } from '../../../shared/srs';
 import type { Square } from '../core/chess';
-import { loadPuzzleSet, type Puzzle, type PuzzleSet } from './data';
+import { loadPuzzleSet } from './data';
+import type { Puzzle, PuzzleSet } from '../../../shared/puzzles';
 import { INITIAL_RATING, updateRating, type Rating } from '../../../shared/glicko';
 import {
   fetchServerState,
@@ -13,10 +14,8 @@ import {
   loadLocalState,
   postAttempt,
   saveLocalState,
-  type AttemptLog,
-  type AttemptPost,
-  type Progress,
 } from './service';
+import type { AttemptLog, AttemptPost, Progress } from '../../../shared/drills';
 import { readJson, writeJson } from '../services/storage';
 
 export type RunPhase = 'intro' | 'play' | 'opponent' | 'wrong' | 'solution' | 'done';

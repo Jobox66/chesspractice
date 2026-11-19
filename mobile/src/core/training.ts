@@ -9,7 +9,7 @@ import { defaultPosition } from 'chessops/variant';
 import * as Crypto from 'expo-crypto';
 import type { Card } from 'ts-fsrs';
 import { forEachNode } from './tree';
-import { dueAt } from './srs';
+import { dueAt } from '../../../shared/srs';
 import type {
   Chapter,
   Color,

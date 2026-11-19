@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { XIcon } from 'lucide-react';
 import { usePuzzleStore } from './store';
-import { THEME_GROUPS } from './themes';
-import { themeCounts, themeTally } from './stats';
+import { THEME_GROUPS } from '../../../shared/puzzleThemes';
+import { themeCounts, themeTally } from '../../../shared/puzzleStats';
 
 // Every topic in the set as a tile, grouped (checkmates, length, tactics,
 // phase): how many puzzles it has, how many you've done and how many of

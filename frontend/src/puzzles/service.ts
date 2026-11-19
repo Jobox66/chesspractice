@@ -3,45 +3,14 @@
 // Puzzles by default; the mistakes trainer passes its own kind and key.
 
 import { get, set } from 'idb-keyval';
-import type { Card } from '../util/srs';
-import type { Rating } from '../../../shared/glicko';
+import type { Card } from '../../../shared/srs';
+import type { AttemptPost, DrillState, Progress } from '../../../shared/drills';
 
 const API = import.meta.env.VITE_API_URL;
 export type DrillKind = 'puzzle' | 'mistake';
 const IDB_KEYS: Record<DrillKind, string> = { puzzle: 'puzzle-progress-v1', mistake: 'mistake-progress-v1' };
 // Matches the server's history window.
 const MAX_LOCAL_ATTEMPTS = 1000;
-
-export interface Progress {
-  attempts: number;
-  successes: number;
-  lastSuccess: boolean;
-  // FSRS card; null until the puzzle is first failed.
-  card: Card | null;
-  updatedAt: string;
-}
-
-export interface AttemptLog {
-  itemId: string;
-  success: boolean;
-  ratingAfter: number | null;
-  durationMs: number;
-  at: string;
-}
-
-export interface DrillState {
-  rating: Rating | null;
-  progress: Record<string, Progress>;
-  attempts: AttemptLog[];
-}
-
-export interface AttemptPost {
-  itemId: string;
-  success: boolean;
-  durationMs: number;
-  card: Card | null;
-  rating: Rating | null;
-}
 
 // JSON turns the card's Dates into strings; ts-fsrs needs them back.
 function reviveCard(card: any): Card | null {

@@ -4,7 +4,7 @@ import { useTrainerStore } from '../../store/state';
 import Divider from '../common/Divider';
 import ToggleGroup from '../common/ToggleGroup';
 import { NodeSearch } from '../../types/training';
-import { SrsConfig, defaultSrsConfig } from '../../util/srs';
+import { SrsConfig, defaultSrsConfig } from '../../../../shared/srs';
 import './modals.css';
 import './SettingsModal.css';
 

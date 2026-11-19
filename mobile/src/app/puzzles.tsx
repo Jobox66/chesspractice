@@ -19,9 +19,9 @@ import { theme } from '../components/theme';
 import { squaresToUci, type Square } from '../core/chess';
 import type { Color } from '../core/types';
 import { sanOf, fenAfter, turnOf } from '../../../shared/game';
-import { ratingSeries, themeCounts, todayStats, weakThemes } from '../puzzles/stats';
+import { ratingSeries, themeCounts, todayStats, weakThemes } from '../../../shared/puzzleStats';
 import { duePuzzles, type Difficulty, usePuzzleStore } from '../puzzles/store';
-import { THEME_GROUPS, themeLabel } from '../puzzles/themes';
+import { THEME_GROUPS, themeLabel } from '../../../shared/puzzleThemes';
 import { useApp } from '../store/app';
 
 export default function PuzzlesScreen() {
@@ -96,7 +96,7 @@ export default function PuzzlesScreen() {
     [s.attempts],
   );
   const weak = useMemo(
-    () => (s.set ? weakThemes(s.set, s.progress) : []),
+    () => (s.set ? weakThemes(s.set, s.progress, 3) : []),
     [s.set, s.progress],
   );
   const countsByTheme = useMemo(

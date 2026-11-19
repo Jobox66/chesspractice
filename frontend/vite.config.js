@@ -6,5 +6,5 @@ export default defineConfig({
   // ../shared holds code used by both this app and mobile/.
   server: { fs: { allow: ['.', '../shared'] } },
   // ../shared has no node_modules; resolve its packages from here.
-  resolve: { dedupe: ['chessops'] },
+  resolve: { dedupe: ['chessops', 'ts-fsrs'] },
 });

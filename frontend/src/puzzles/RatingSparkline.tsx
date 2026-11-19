@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { RatingPoint } from './stats';
+import type { RatingPoint } from '../../../shared/puzzleStats';
 
 // One series, so no legend: the panel title names it. A 2px line in the
 // app's blue; hover (or touch) reads out the nearest point.

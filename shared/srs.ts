@@ -1,3 +1,6 @@
+// FSRS scheduling for openings, puzzles and mistakes on web and mobile alike,
+// so a card reviewed on the phone and one reviewed in the browser follow one
+// schedule.
 import {
   Card,
   createEmptyCard,
@@ -42,9 +45,10 @@ export function createCard(): Card {
  * Returns the updated card.
  */
 export function reviewCard(card: Card, correct: boolean, now = new Date()): Card {
-  const f = getScheduler();
-  const scheduling = f.repeat(card, now);
-  const rating = correct ? Rating.Good : Rating.Again;
-  console.log(scheduling)
-  return scheduling[rating].card;
+  // The backend's card struct has no learning_steps, so cards that went
+  // through the server come back without it.
+  const input = { ...card, learning_steps: card.learning_steps ?? 0 };
+  return getScheduler().next(input, now, correct ? Rating.Good : Rating.Again).card;
 }
+
+export const dueAt = (card: Card) => new Date(card.due).getTime();

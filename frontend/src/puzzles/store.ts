@@ -4,8 +4,9 @@ import { Chess, normalizeMove } from 'chessops/chess';
 import { makeFen, parseFen } from 'chessops/fen';
 import { makeSan } from 'chessops/san';
 import { makeUci, parseUci } from 'chessops/util';
-import { createCard, reviewCard, type Card } from '../util/srs';
-import { loadPuzzleSet, type Puzzle, type PuzzleSet } from './data';
+import { createCard, reviewCard, type Card } from '../../../shared/srs';
+import { loadPuzzleSet } from './data';
+import type { Puzzle, PuzzleSet } from '../../../shared/puzzles';
 import { INITIAL_RATING, updateRating, type Rating } from '../../../shared/glicko';
 import {
   fetchServerState,
@@ -13,10 +14,8 @@ import {
   loadLocalState,
   postAttempt,
   saveLocalState,
-  type AttemptLog,
-  type AttemptPost,
-  type Progress,
 } from './service';
+import type { AttemptLog, AttemptPost, Progress } from '../../../shared/drills';
 
 // ---------------------------------------------------------------------------
 // One puzzle being played.

@@ -16,7 +16,7 @@ import { JudgmentPill } from '../components/ChessWidgets';
 import { Button, Card, Segmented } from '../components/ui';
 import { theme } from '../components/theme';
 import { squaresToUci, type Square } from '../core/chess';
-import { collectMistakes, unanalysedGames } from '../mistakes/items';
+import { collectMistakes, unanalysedGames } from '../../../shared/mistakeItems';
 import { isDue, useMistakeStore } from '../mistakes/store';
 import { JUDGMENT_COLOR } from '../../../shared/analysis';
 import { usePlayStore } from '../play/store';

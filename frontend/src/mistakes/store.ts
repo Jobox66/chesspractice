@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Key } from 'chessground/types';
-import { createCard, reviewCard, type Card } from '../util/srs';
+import { createCard, reviewCard, type Card } from '../../../shared/srs';
 import { getEngine } from '../play/engine';
 import { fenAfter, legalUci, replay, sanOf, turnOf } from '../../../shared/game';
 import { analyseGame, evalText, sameMove, terminalEval, winPct } from '../../../shared/analysis';
@@ -11,11 +11,9 @@ import {
   loadLocalState,
   postAttempt,
   saveLocalState,
-  type AttemptLog,
-  type AttemptPost,
-  type Progress,
 } from '../puzzles/service';
-import { collectMistakes, unanalysedGames, type MistakeItem } from './items';
+import type { AttemptLog, AttemptPost, Progress } from '../../../shared/drills';
+import { collectMistakes, unanalysedGames, type MistakeItem } from '../../../shared/mistakeItems';
 
 const KIND = 'mistake' as const;
 

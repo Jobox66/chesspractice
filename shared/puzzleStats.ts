@@ -1,6 +1,6 @@
-import type { PuzzleSet } from './data';
-import type { AttemptLog, Progress } from './service';
-import { SKILL_THEMES } from './themes';
+import type { PuzzleSet } from './puzzles';
+import type { AttemptLog, Progress } from './drills';
+import { SKILL_THEMES } from './puzzleThemes';
 
 export function todayStats(attempts: AttemptLog[]) {
   const start = new Date();
@@ -35,6 +35,9 @@ export interface ThemeStat {
   successRate: number;
 }
 
+// Per theme: puzzles tried and solved on the first try. "First try" is the
+// puzzle's first recorded result, approximated from progress: a puzzle that
+// ever had a card was missed.
 export function themeTally(set: PuzzleSet, progress: Record<string, Progress>): Map<string, { tried: number; ok: number }> {
   const tally = new Map<string, { tried: number; ok: number }>();
   for (const [id, p] of Object.entries(progress)) {
@@ -51,7 +54,9 @@ export function themeTally(set: PuzzleSet, progress: Record<string, Progress>): 
   return tally;
 }
 
-export function weakThemes(set: PuzzleSet, progress: Record<string, Progress>, minTried = 3, limit = 3): ThemeStat[] {
+// Skill themes with the lowest first-try success, among those tried often
+// enough to say anything.
+export function weakThemes(set: PuzzleSet, progress: Record<string, Progress>, minTried = 5, limit = 3): ThemeStat[] {
   return [...themeTally(set, progress).entries()]
     .filter(([theme, r]) => SKILL_THEMES.has(theme) && r.tried >= minTried)
     .map(([theme, r]) => ({ theme, attempts: r.tried, successRate: r.ok / r.tried }))
@@ -64,4 +69,3 @@ export function themeCounts(set: PuzzleSet): Map<string, number> {
   for (const p of set.puzzles) for (const t of p.themes) counts.set(t, (counts.get(t) ?? 0) + 1);
   return counts;
 }
-

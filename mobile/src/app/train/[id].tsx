@@ -17,7 +17,7 @@ import { Button, Card, Segmented } from '../../components/ui';
 import { theme } from '../../components/theme';
 import { useApp } from '../../store/app';
 import { playSan, positionFromFen, sanToSquares, squaresToMove, colorFromPly, type Square } from '../../core/chess';
-import { createCard, reviewCard, dueAt } from '../../core/srs';
+import { createCard, reviewCard, dueAt } from '../../../../shared/srs';
 import { getNodeList } from '../../core/tree';
 import { cardOf, formatDuration, nextDueIn, nextTrainable } from '../../core/training';
 import { DEFAULT_NODE_SEARCH, type TrainableContext, type TrainableNode, type TrainingMethod } from '../../core/types';

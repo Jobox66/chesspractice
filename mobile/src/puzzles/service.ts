@@ -1,5 +1,5 @@
-import type { Card } from '../core/srs';
-import type { Rating } from '../../../shared/glicko';
+import type { Card } from '../../../shared/srs';
+import type { AttemptPost, DrillState, Progress } from '../../../shared/drills';
 import { api, ApiError } from '../services/api';
 import { readJson, writeJson } from '../services/storage';
 
@@ -9,36 +9,6 @@ const LOCAL_KEYS: Record<DrillKind, string> = {
   mistake: 'mistake-progress-v1',
 };
 const MAX_LOCAL_ATTEMPTS = 1000;
-
-export interface Progress {
-  attempts: number;
-  successes: number;
-  lastSuccess: boolean;
-  card: Card | null;
-  updatedAt: string;
-}
-
-export interface AttemptLog {
-  itemId: string;
-  success: boolean;
-  ratingAfter: number | null;
-  durationMs: number;
-  at: string;
-}
-
-export interface DrillState {
-  rating: Rating | null;
-  progress: Record<string, Progress>;
-  attempts: AttemptLog[];
-}
-
-export interface AttemptPost {
-  itemId: string;
-  success: boolean;
-  durationMs: number;
-  card: Card | null;
-  rating: Rating | null;
-}
 
 function reviveCard(card: any): Card | null {
   if (!card) return null;

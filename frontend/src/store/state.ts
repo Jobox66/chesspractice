@@ -29,7 +29,7 @@ import {
   updateScheduler,
   type SrsConfig,
   type Card,
-} from '../util/srs';
+} from '../../../shared/srs';
 import { postChapter } from '../services/postChapter';
 import { PLAYGROUND_KEY, useAuthStore } from './auth';
 import { fetchRepertoire } from '../services/repertoire';

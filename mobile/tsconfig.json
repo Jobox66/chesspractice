@@ -5,7 +5,8 @@
     // ../shared has no node_modules of its own; resolve its imports here.
     "paths": {
       "chessops": ["./node_modules/chessops/dist/types/index.d.ts"],
-      "chessops/*": ["./node_modules/chessops/dist/types/*"]
+      "chessops/*": ["./node_modules/chessops/dist/types/*"],
+      "ts-fsrs": ["./node_modules/ts-fsrs/dist/index.d.ts"]
     }
   },
   "include": [

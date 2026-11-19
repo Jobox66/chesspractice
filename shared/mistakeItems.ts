@@ -3,8 +3,8 @@
 // move" from the position before it. Items are derived from the saved games
 // on the fly; only the progress on them is stored (drill kind "mistake").
 
-import { replay, type Color, type Game } from '../../../shared/game';
-import { reviewMoves, type Judgment } from '../../../shared/analysis';
+import { replay, type Color, type Game } from './game';
+import { reviewMoves, type Judgment } from './analysis';
 
 export interface MistakeItem {
   id: string; // "<gameId>-<ply>"
@@ -20,7 +20,7 @@ export interface MistakeItem {
   playedSan: string;
   best: string;
   bestSan: string;
-  judgment: Exclude<Judgment, 'inaccuracy'>;
+  judgment: Extract<Judgment, 'mistake' | 'blunder'>;
   drop: number; // win% your move lost
   // Evaluation before the move, White's point of view.
   evalBefore: { cp: number | null; mate: number | null };
@@ -50,7 +50,7 @@ export function mistakesOf(game: Game): MistakeItem[] {
   const { fens, sans } = replayed;
   if (a.evals.length !== fens.length) return [];
   const out: MistakeItem[] = [];
-  for (const r of reviewMoves(game.moves, fens, a)) {
+  for (const r of reviewMoves(game.moves, fens, a, sans)) {
     if (r.mover !== game.playerColor) continue;
     if (r.judgment !== 'mistake' && r.judgment !== 'blunder') continue;
     if (!r.best || !r.bestSan) continue;
