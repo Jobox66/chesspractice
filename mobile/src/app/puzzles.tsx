@@ -18,7 +18,7 @@ import { Button, Card, Segmented } from '../components/ui';
 import { theme } from '../components/theme';
 import { squaresToUci, type Square } from '../core/chess';
 import type { Color } from '../core/types';
-import { sanOf, fenAfter, turnOf } from '../play/game';
+import { sanOf, fenAfter, turnOf } from '../../../shared/game';
 import { ratingSeries, themeCounts, todayStats, weakThemes } from '../puzzles/stats';
 import { duePuzzles, type Difficulty, usePuzzleStore } from '../puzzles/store';
 import { THEME_GROUPS, themeLabel } from '../puzzles/themes';

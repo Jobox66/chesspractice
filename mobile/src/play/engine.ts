@@ -7,7 +7,7 @@ import { parseFen } from 'chessops/fen';
 import { parseSan } from 'chessops/san';
 import { makeUci } from 'chessops/util';
 import type { Move, Role } from 'chessops';
-import { OPENING_DATABASE } from './openings';
+import { OPENING_DATABASE } from '../../../shared/openings';
 
 export const MIN_UCI_ELO = 1320;
 export const MAX_UCI_ELO = 3190;
@@ -24,6 +24,10 @@ export interface SearchResult {
   bestmove: string | null;
   line: SearchLine | null;
 }
+
+// Post-game review search time per position: shorter than the web's
+// (shared/analysis ANALYSIS_MOVETIME) to keep reviews quick on a phone.
+export const REVIEW_MOVETIME = 180;
 
 export function lowSkill(elo: number): number {
   return Math.max(0, Math.min(5, Math.round((elo - 800) / 100)));

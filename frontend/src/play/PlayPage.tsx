@@ -42,7 +42,7 @@ import {
   type Color,
   type Game,
   type PieceRole,
-} from './game';
+} from '../../../shared/game';
 import {
   accuracy,
   evalText,
@@ -55,8 +55,8 @@ import {
   type MoveReview,
   type Judgment,
   type Analysis,
-} from './analysis';
-import { detectOpening, type OpeningMatch } from './openings';
+} from '../../../shared/analysis';
+import { detectOpening, type OpeningMatch } from '../../../shared/openings';
 import { useTrainerStore } from '../store/state';
 import { navigate } from '../util/route';
 import { EvalGraph } from './EvalGraph';

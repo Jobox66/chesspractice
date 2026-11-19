@@ -1,7 +1,12 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    // ../shared has no node_modules of its own; resolve its imports here.
+    "paths": {
+      "chessops": ["./node_modules/chessops/dist/types/index.d.ts"],
+      "chessops/*": ["./node_modules/chessops/dist/types/*"]
+    }
   },
   "include": [
     "**/*.ts",

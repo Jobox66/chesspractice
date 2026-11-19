@@ -35,9 +35,9 @@ import {
   type Analysis,
   type MoveReview,
   type PlyEval,
-} from '../play/analysis';
-import { calculateMaterial, replay, resultText, toPgn, turnOf } from '../play/game';
-import { detectOpening, isPlyInBook } from '../play/openings';
+} from '../../../shared/analysis';
+import { calculateMaterial, replay, resultText, toPgn, turnOf } from '../../../shared/game';
+import { detectOpening, isPlyInBook } from '../../../shared/openings';
 import { ELO_STEP, MAX_ELO, MIN_ELO, usePlayStore, useShown } from '../play/store';
 import { useApp } from '../store/app';
 

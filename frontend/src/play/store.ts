@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { INITIAL_FEN } from 'chessops/fen';
 import { getEngine, lowSkill, MIN_UCI_ELO, type Engine } from './engine';
-import { fenAfter, gameStatus, legalUci, replay, sanOf, scoreText, turnOf, type Color, type Game, type GameResult } from './game';
-import { analyseGame, terminalEval, type Analysis } from './analysis';
+import { fenAfter, gameStatus, legalUci, replay, sanOf, scoreText, turnOf, type Color, type Game, type GameResult } from '../../../shared/game';
+import { analyseGame, terminalEval, type Analysis } from '../../../shared/analysis';
 import { fetchGames, HttpError, removeGame, uploadGame } from './sync';
 
 export const MIN_ELO = 800;

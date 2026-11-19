@@ -1,19 +1,30 @@
-// Post-game review: evaluates every position of a game,
+// Post-game review: Stockfish evaluates every position of a finished game,
 // and each move is judged by how much it dropped the mover's winning chances
 // (the Lichess & Chess.com method: brilliant, best, good, book, inaccuracy, mistake, blunder).
 
 import { Chess } from 'chessops/chess';
 import { parseFen } from 'chessops/fen';
-import type { Engine } from './engine';
 import { sanOf, turnOf, type Color } from './game';
 import { isPlyInBook } from './openings';
+
+// What analyseGame needs from an engine. Web (Stockfish WASM worker) and
+// mobile each have their own Engine class that fits this.
+export interface Searcher {
+  search(
+    fen: string,
+    strength: 'max',
+    go: string,
+  ): Promise<{ bestmove: string | null; line: { cp: number | null; mate: number | null } | null }>;
+}
 
 export type PlyEval = { cp: number | null; mate: number | null };
 
 export interface Analysis {
   v: 1;
   movetime: number;
+  // Per position (index = ply, like fens): White's point of view.
   evals: PlyEval[];
+  // Engine's best move from each position ('' when the game is over there).
   best: string[];
 }
 
@@ -67,18 +78,22 @@ export const JUDGMENT_COLOR: Record<Judgment, string> = {
 };
 
 export interface MoveReview {
-  ply: number;
+  ply: number; // the move that led to fens[ply]
   mover: Color;
   judgment: Judgment | null;
-  drop: number;
-  best: string | null;
+  drop: number; // mover's win% lost, ≥ 0
+  best: string | null; // engine's move instead, when different from the one played
   bestSan: string | null;
-  evalBefore: string;
+  evalBefore: string; // mover's point of view
   evalAfter: string;
 }
 
-export const ANALYSIS_MOVETIME = 180;
+// Per-position search time for a review; mobile passes a shorter one.
+export const ANALYSIS_MOVETIME = 350;
 
+// ---------------------------------------------------------------------------
+
+// White's win chance (0–100) from a White-POV evaluation.
 export function winPct(e: { cp: number | null; mate: number | null }): number {
   if (e.mate != null) return e.mate > 0 ? 100 : e.mate < 0 ? 0 : 50;
   const cp = Math.max(-1000, Math.min(1000, e.cp ?? 0));
@@ -88,7 +103,7 @@ export function winPct(e: { cp: number | null; mate: number | null }): number {
 export function evalText(e: { cp: number | null; mate: number | null }, pov: Color): string {
   const sign = pov === 'white' ? 1 : -1;
   if (e.mate != null) {
-    if (Math.abs(e.mate) < 1) return '#';
+    if (Math.abs(e.mate) < 1) return '#'; // checkmate on the board
     const m = e.mate * sign;
     return m > 0 ? `#${m}` : `#−${Math.abs(m)}`;
   }
@@ -96,18 +111,22 @@ export function evalText(e: { cp: number | null; mate: number | null }, pov: Col
   return v > 0 ? `+${v.toFixed(1)}` : v < 0 ? `−${Math.abs(v).toFixed(1)}` : '0.0';
 }
 
+// Terminal positions have no search; score them directly.
 export function terminalEval(fen: string): { cp: number | null; mate: number | null } | null {
   const pos = Chess.fromSetup(parseFen(fen).unwrap()).unwrap();
+  // Already mated: a fractional mate score marks "mate on the board" and still
+  // gives winPct 0 / 100 to the right side.
   if (pos.isCheckmate()) return { cp: null, mate: turnOf(fen) === 'white' ? -0.5 : 0.5 };
   if (pos.isStalemate() || pos.isInsufficientMaterial()) return { cp: 0, mate: null };
   return null;
 }
 
 export async function analyseGame(
-  engine: Engine,
+  engine: Searcher,
   fens: string[],
   onProgress: (done: number, total: number) => void,
   cancelled: () => boolean,
+  movetime = ANALYSIS_MOVETIME,
 ): Promise<Analysis | null> {
   const evals: Analysis['evals'] = [];
   const best: string[] = [];
@@ -119,7 +138,7 @@ export async function analyseGame(
       evals.push(terminal);
       best.push('');
     } else {
-      const res = await engine.search(fen, 'max', `movetime ${ANALYSIS_MOVETIME}`);
+      const res = await engine.search(fen, 'max', `movetime ${movetime}`);
       const sign = turnOf(fen) === 'white' ? 1 : -1;
       const line = res.line;
       evals.push({
@@ -130,8 +149,10 @@ export async function analyseGame(
     }
     onProgress(i + 1, fens.length);
   }
-  return { v: 1, movetime: ANALYSIS_MOVETIME, evals, best };
+  return { v: 1, movetime, evals, best };
 }
+
+// ---------------------------------------------------------------------------
 
 function pieceScores(fen: string): { white: number; black: number } {
   const board = fen.split(' ')[0] ?? '';
@@ -157,10 +178,11 @@ function isBrilliantMove(
   ply: number,
 ): boolean {
   if (ply <= 6) return false;
-  if (drop > 1.5) return false;
+  if (drop > 1.5) return false; // Must lose almost zero win chance
   const win = mover === 'white' ? winPct(after) : 100 - winPct(after);
-  if (win < 65) return false;
+  if (win < 65) return false; // Position must remain winning
 
+  // Material sacrifice check
   const b = pieceScores(fenBefore);
   const a = pieceScores(fenAfter);
   const moverDiff =
@@ -168,6 +190,7 @@ function isBrilliantMove(
       ? (a.white - a.black) - (b.white - b.black)
       : (a.black - a.white) - (b.black - b.white);
 
+  // Mover sacrificed at least 2 points of material (e.g. piece or exchange)
   return moverDiff <= -2;
 }
 
@@ -193,11 +216,14 @@ export function reviewMoves(
 
     let judgment: Judgment | null = null;
 
+    // 1. Opening book move
     if (sans && isPlyInBook(sans, ply)) {
       judgment = 'book';
     } else if (!hasBothEvals) {
+      // Position not yet evaluated at full strength: don't guess a judgment
       judgment = null;
     } else if (sameAsBest) {
+      // Playing the engine's #1 move is never a mistake, even if depth variance shifts eval
       judgment = isBrilliantMove(fens[ply - 1], fens[ply], drop, after, mover, ply) ? 'brilliant' : 'best';
     } else if (drop >= 30) {
       judgment = 'blunder';
@@ -226,6 +252,7 @@ export function reviewMoves(
   return out;
 }
 
+// e1g1 vs e1h1 etc.: compare on squares + promotion, castling either form.
 export function sameMove(a: string, b: string): boolean {
   if (a === b) return true;
   const castle: Record<string, string> = { e1h1: 'e1g1', e1a1: 'e1c1', e8h8: 'e8g8', e8a8: 'e8c8' };
@@ -240,6 +267,7 @@ function safeSan(fen: string, uci: string): string | null {
   }
 }
 
+// Lichess-style per-move accuracy from the win% drop, averaged.
 export function accuracy(reviews: MoveReview[], color: Color): number | null {
   const mine = reviews.filter((r) => r.mover === color);
   if (mine.length === 0) return null;

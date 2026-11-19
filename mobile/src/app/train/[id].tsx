@@ -21,7 +21,7 @@ import { createCard, reviewCard, dueAt } from '../../core/srs';
 import { getNodeList } from '../../core/tree';
 import { cardOf, formatDuration, nextDueIn, nextTrainable } from '../../core/training';
 import { DEFAULT_NODE_SEARCH, type TrainableContext, type TrainableNode, type TrainingMethod } from '../../core/types';
-import { detectOpening, isPlyInBook } from '../../play/openings';
+import { detectOpening, isPlyInBook } from '../../../../shared/openings';
 
 type ScreenMode = 'learn' | 'recall' | 'explore';
 type Phase = 'play' | 'fail' | 'lineDone' | 'quiz' | 'quizFail' | 'quizDone' | 'done';

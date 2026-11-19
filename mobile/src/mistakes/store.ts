@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { createCard, reviewCard, dueAt, type Card } from '../core/srs';
 import type { Square } from '../core/chess';
-import { getEngine } from '../play/engine';
-import { fenAfter, legalUci, replay, sanOf, turnOf } from '../play/game';
-import { analyseGame, evalText, sameMove, terminalEval, winPct } from '../play/analysis';
+import { getEngine, REVIEW_MOVETIME } from '../play/engine';
+import { fenAfter, legalUci, replay, sanOf, turnOf } from '../../../shared/game';
+import { analyseGame, evalText, sameMove, terminalEval, winPct } from '../../../shared/analysis';
 import { usePlayStore } from '../play/store';
 import {
   fetchServerState,
@@ -344,6 +344,7 @@ export const useMistakeStore = create<MistakeState>((set, get) => {
                 if (live()) set({ batch: { games: games.length, gamesDone: i, positions: total, positionsDone: done } });
               },
               () => !live(),
+              REVIEW_MOVETIME,
             );
             if (!analysis || !live()) return;
             usePlayStore.getState().saveAnalysis(g.id, analysis);

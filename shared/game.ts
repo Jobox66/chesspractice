@@ -15,17 +15,19 @@ export interface Game {
   id: string;
   playerColor: Color;
   elo: number;
+  // UCI moves from the initial position.
   moves: string[];
   result: GameResult | null;
   hintsUsed: number;
   takebacks: number;
   startedAt: string;
   endedAt: string | null;
+  // Engine review, once run (finished games only).
   analysis?: Analysis | null;
 }
 
 export interface Replayed {
-  fens: string[];
+  fens: string[]; // fens[0] = start, fens[i] = after move i
   sans: string[];
 }
 
@@ -46,6 +48,7 @@ export function replay(moves: string[]): Replayed {
   return { fens, sans };
 }
 
+// The legal, normalised form of a move in this position, or null.
 export function legalUci(fen: string, uci: string): string | null {
   const pos = position(fen);
   const parsed = parseUci(uci);
@@ -73,8 +76,10 @@ export function isCheck(fen: string): boolean {
   return position(fen).isCheck();
 }
 
+// Repetition compares placement, side to move, castling and en passant.
 const repetitionKey = (fen: string) => fen.split(' ').slice(0, 4).join(' ');
 
+// Result of the position after the last move, or null if play goes on.
 export function gameStatus(fens: string[]): GameResult | null {
   const fen = fens[fens.length - 1];
   const pos = position(fen);
@@ -122,8 +127,10 @@ export function toPgn(game: Game): string {
   ];
   const body: string[] = [];
   sans.forEach((san, i) => {
+    // Annotated: "14... Qxb2?? { Best: Nd7 }"
     const r = reviews[i];
     const mark = r?.judgment ? JUDGMENT_SYMBOL[r.judgment] : '';
+    // a Black move after a comment needs its number again ("14...")
     const prev = reviews[i - 1];
     const afterComment = !!(prev?.judgment && prev.bestSan);
     const prefix = i % 2 === 0 ? `${i / 2 + 1}. ` : afterComment ? `${(i + 1) / 2}... ` : '';
@@ -134,6 +141,8 @@ export function toPgn(game: Game): string {
   return headers.map(([k, v]) => `[${k} "${v}"]`).join('\n') + '\n\n' + body.join(' ') + '\n';
 }
 
+// Engine score → "+0.4" / "−1.2" / "#3" from `pov`'s side. `line` is from
+// the side to move in `fen`.
 export function scoreText(cp: number | null, mate: number | null, fen: string, pov: Color): string {
   const sign = turnOf(fen) === pov ? 1 : -1;
   if (mate != null) {
@@ -150,9 +159,9 @@ export type PieceRole = 'p' | 'n' | 'b' | 'r' | 'q';
 export interface MaterialInfo {
   whiteScore: number;
   blackScore: number;
-  diff: number;
-  capturedByWhite: PieceRole[];
-  capturedByBlack: PieceRole[];
+  diff: number; // > 0: White ahead, < 0: Black ahead
+  capturedByWhite: PieceRole[]; // Black pieces captured by White
+  capturedByBlack: PieceRole[]; // White pieces captured by Black
 }
 
 const STARTING_COUNT: Record<PieceRole, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
@@ -201,4 +210,3 @@ export function calculateMaterial(fen: string): MaterialInfo {
     capturedByBlack,
   };
 }
-

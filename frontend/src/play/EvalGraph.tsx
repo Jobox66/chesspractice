@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Judgment } from './analysis';
+import type { Judgment } from '../../../shared/analysis';
 
 // Evaluation over the game as White's win chance (one series, so no legend;
 // the panel label names it). The dashed midline is equality. Hover reads a

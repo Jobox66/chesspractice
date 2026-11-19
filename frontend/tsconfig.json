@@ -11,7 +11,12 @@
     "forceConsistentCasingInFileNames": true,
     // Type-check only: Vite does the building. Without this, tsc would emit
     // .js next to every input .js file (scripts/, public/, dist/).
-    "noEmit": true
+    "noEmit": true,
+    // ../shared has no node_modules of its own; resolve its imports here.
+    "paths": {
+      "chessops": ["./node_modules/chessops/dist/types/index.d.ts"],
+      "chessops/*": ["./node_modules/chessops/dist/types/*"]
+    }
   },
   "include": ["src", "vite-env.d.ts"]
 }

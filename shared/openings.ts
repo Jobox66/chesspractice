@@ -1,8 +1,8 @@
-// Opening database and detector for live Play and post-game Review on Mobile.
+// Opening database and detector for live Play and post-game Review.
 // Recognizes ECO codes, opening names and variations, and links them directly
 // to the curriculum chapters in openingLibrary.ts (e.g. Pirc Defence, Catalan, etc.).
 
-import { OPENING_LIBRARY } from '../../../shared/openingLibrary';
+import { OPENING_LIBRARY } from './openingLibrary';
 
 export interface OpeningEntry {
   eco: string;
@@ -30,6 +30,8 @@ export interface OpeningMatch {
   bookMoves?: string[]; // next book moves from this position
 }
 
+// Built-in ECO opening database (comprehensive, matching standard FIDE/Chess.com/Lichess naming).
+// Specifically rich in Pirc, Catalan, Caro-Kann, Italian, Slav, Sicilian, French, London.
 export const OPENING_DATABASE: OpeningEntry[] = [
   // --- PIRC DEFENCE (User priority #1) ---
   {
@@ -601,6 +603,7 @@ export const OPENING_DATABASE: OpeningEntry[] = [
   },
 ];
 
+// Helper: Normalize SAN sequence to compare
 function movesMatch(a: string[], b: string[]): boolean {
   if (a.length < b.length) return false;
   for (let i = 0; i < b.length; i++) {
@@ -609,8 +612,13 @@ function movesMatch(a: string[], b: string[]): boolean {
   return true;
 }
 
+// Map chapter ID to OPENING_LIBRARY entry
 const LIBRARY_BY_ID = new Map(OPENING_LIBRARY.map((entry) => [entry.id, entry]));
 
+/**
+ * Detect the current chess opening and variation from the sequence of played SAN moves.
+ * Finds the deepest matching line in the database and cross-references with OPENING_LIBRARY.
+ */
 export function detectOpening(sans: string[]): OpeningMatch | null {
   if (!sans || sans.length === 0) return null;
 
@@ -627,6 +635,7 @@ export function detectOpening(sans: string[]): OpeningMatch | null {
   }
 
   if (!bestMatch) {
+    // If no deep match, check first move
     if (sans[0] === 'e4') {
       return {
         eco: 'B00',
@@ -676,6 +685,9 @@ export function detectOpening(sans: string[]): OpeningMatch | null {
     return null;
   }
 
+  // Check if player is still following book moves
+  // A position is "in book" if sans.length <= bestMatch.moves.length
+  // OR if there exists another entry extending this line
   let hasLongerBook = false;
   const nextMoves: string[] = [];
 
@@ -691,6 +703,7 @@ export function detectOpening(sans: string[]): OpeningMatch | null {
 
   const isInBook = sans.length <= bestMatch.moves.length || hasLongerBook;
 
+  // Resolve curriculum chapter if associated
   let chapterInfo: OpeningMatch['chapter'] | undefined;
   if (bestMatch.chapterId) {
     const lib = LIBRARY_BY_ID.get(bestMatch.chapterId);
@@ -717,6 +730,11 @@ export function detectOpening(sans: string[]): OpeningMatch | null {
   };
 }
 
+/**
+ * Checks whether a move at a given ply was a book move.
+ * A move at ply (1-indexed) is a book move if the move prefix up to that ply
+ * exists in any opening line in the database.
+ */
 export function isPlyInBook(sans: string[], ply: number): boolean {
   if (ply <= 0 || ply > sans.length) return false;
   const sub = sans.slice(0, ply);
@@ -726,6 +744,7 @@ export function isPlyInBook(sans: string[], ply: number): boolean {
   return false;
 }
 
+// Book moves that continue `sans` (the engine plays these in the opening).
 export function getBookReplies(sans: string[]): string[] {
   if (sans.length === 0) return ['e4', 'd4', 'c4', 'Nf3'];
   const replies = new Set<string>();

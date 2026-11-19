@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { INITIAL_FEN } from 'chessops/fen';
-import { getEngine, lowSkill, MIN_UCI_ELO, type Engine } from './engine';
+import { getEngine, lowSkill, MIN_UCI_ELO, REVIEW_MOVETIME, type Engine } from './engine';
 import {
   fenAfter,
   gameStatus,
@@ -13,8 +13,8 @@ import {
   type Color,
   type Game,
   type GameResult,
-} from './game';
-import { analyseGame, terminalEval, type Analysis } from './analysis';
+} from '../../../shared/game';
+import { analyseGame, terminalEval, type Analysis } from '../../../shared/analysis';
 import { fetchGames, HttpError, removeGame, uploadGame } from './sync';
 import { readJson, writeJson } from '../services/storage';
 
@@ -503,6 +503,7 @@ export const usePlayStore = create<PlayState>((set, get) => {
           if (get().analysing?.id === id) set({ analysing: { id, done, total } });
         },
         () => get().analysing?.id !== id,
+        REVIEW_MOVETIME,
       )
         .then((analysis) => {
           if (!analysis || get().analysing?.id !== id) return;

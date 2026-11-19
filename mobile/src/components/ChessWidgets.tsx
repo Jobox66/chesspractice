@@ -17,9 +17,9 @@ import {
   type MoveReview,
   type PlyEval,
   winPct,
-} from '../play/analysis';
-import type { OpeningMatch } from '../play/openings';
-import type { PieceRole } from '../play/game';
+} from '../../../shared/analysis';
+import type { OpeningMatch } from '../../../shared/openings';
+import type { PieceRole } from '../../../shared/game';
 import { useApp } from '../store/app';
 import { theme } from './theme';
 

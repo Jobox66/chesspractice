@@ -3,8 +3,8 @@
 // move" from the position before it. Items are derived from the saved games
 // on the fly; only the progress on them is stored (drill kind "mistake").
 
-import { replay, type Color, type Game } from '../play/game';
-import { reviewMoves, type Judgment } from '../play/analysis';
+import { replay, type Color, type Game } from '../../../shared/game';
+import { reviewMoves, type Judgment } from '../../../shared/analysis';
 
 export interface MistakeItem {
   id: string; // "<gameId>-<ply>"

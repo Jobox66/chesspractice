@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import type { Key } from 'chessground/types';
 import { createCard, reviewCard, type Card } from '../util/srs';
 import { getEngine } from '../play/engine';
-import { fenAfter, legalUci, replay, sanOf, turnOf } from '../play/game';
-import { analyseGame, evalText, sameMove, terminalEval, winPct } from '../play/analysis';
+import { fenAfter, legalUci, replay, sanOf, turnOf } from '../../../shared/game';
+import { analyseGame, evalText, sameMove, terminalEval, winPct } from '../../../shared/analysis';
 import { usePlayStore } from '../play/store';
 import {
   fetchServerState,

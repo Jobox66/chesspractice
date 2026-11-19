@@ -10,7 +10,7 @@ import { makeSquare, parseSquare } from 'chessops';
 import { PIECE_SVGS } from '../data/pieces';
 import { isPromotion, legalDests, positionFromFen, type Square } from '../core/chess';
 import type { Color } from '../core/types';
-import { JUDGMENT_COLOR, JUDGMENT_SYMBOL, type Judgment } from '../play/analysis';
+import { JUDGMENT_COLOR, JUDGMENT_SYMBOL, type Judgment } from '../../../shared/analysis';
 import { theme } from './theme';
 
 export type Arrow = { from: Square; to?: Square; color: string };

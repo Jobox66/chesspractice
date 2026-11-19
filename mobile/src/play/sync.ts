@@ -2,7 +2,7 @@
 // Uses the mobile api() client (Bearer token + Render wake-up).
 
 import { api, ApiError } from '../services/api';
-import type { Game } from './game';
+import type { Game } from '../../../shared/game';
 
 export { ApiError as HttpError };
 

@@ -1,7 +1,7 @@
 // Saved games on the server (/games → Neon) for signed-in users. Guests
 // keep their games in localStorage only (see store.ts).
 
-import type { Game } from './game';
+import type { Game } from '../../../shared/game';
 
 const API = import.meta.env.VITE_API_URL;
 

@@ -18,7 +18,7 @@ import { theme } from '../components/theme';
 import { squaresToUci, type Square } from '../core/chess';
 import { collectMistakes, unanalysedGames } from '../mistakes/items';
 import { isDue, useMistakeStore } from '../mistakes/store';
-import { JUDGMENT_COLOR } from '../play/analysis';
+import { JUDGMENT_COLOR } from '../../../shared/analysis';
 import { usePlayStore } from '../play/store';
 import { useApp } from '../store/app';
 
