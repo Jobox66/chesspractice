@@ -4,7 +4,7 @@
 
 import { get, set } from 'idb-keyval';
 import type { Card } from '../util/srs';
-import type { Rating } from './glicko';
+import type { Rating } from '../../../shared/glicko';
 
 const API = import.meta.env.VITE_API_URL;
 export type DrillKind = 'puzzle' | 'mistake';

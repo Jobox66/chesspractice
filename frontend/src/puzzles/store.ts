@@ -6,7 +6,7 @@ import { makeSan } from 'chessops/san';
 import { makeUci, parseUci } from 'chessops/util';
 import { createCard, reviewCard, type Card } from '../util/srs';
 import { loadPuzzleSet, type Puzzle, type PuzzleSet } from './data';
-import { INITIAL_RATING, updateRating, type Rating } from './glicko';
+import { INITIAL_RATING, updateRating, type Rating } from '../../../shared/glicko';
 import {
   fetchServerState,
   HttpError,

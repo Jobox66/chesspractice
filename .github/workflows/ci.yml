@@ -43,6 +43,10 @@ jobs:
       - name: install
         working-directory: frontend
         run: npm ci
+      # Vite doesn't typecheck; keep type errors from piling up again.
+      - name: typecheck
+        working-directory: frontend
+        run: npx tsc -p .
       - name: build
         working-directory: frontend
         run: npm run build

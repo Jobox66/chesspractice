@@ -1,5 +1,5 @@
 import type { Card } from '../core/srs';
-import type { Rating } from './glicko';
+import type { Rating } from '../../../shared/glicko';
 import { api, ApiError } from '../services/api';
 import { readJson, writeJson } from '../services/storage';
 

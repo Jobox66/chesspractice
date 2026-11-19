@@ -1,4 +1,4 @@
-import { OPENING_LIBRARY } from '../src/data/openingLibrary.ts';
+import { OPENING_LIBRARY } from '../../shared/openingLibrary.ts';
 import { parsePgn } from 'chessops/pgn';
 import { parseSan } from 'chessops/san';
 import { Chess } from 'chessops/chess';

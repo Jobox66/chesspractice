@@ -89,6 +89,8 @@ export interface TrainingData {
 
 export interface RootData {}
 
+// At runtime nodes are plain { data, children } objects (from JSON / IndexedDB),
+// never ChildNode instances, so new ones are built as literals `as TrainableNode`.
 export type TrainableNode = ChildNode<TrainingData>;
 // dummy node with id = ''
 export type TrainingRoot<T> = {

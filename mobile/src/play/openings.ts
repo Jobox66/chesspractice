@@ -2,7 +2,7 @@
 // Recognizes ECO codes, opening names and variations, and links them directly
 // to the curriculum chapters in openingLibrary.ts (e.g. Pirc Defence, Catalan, etc.).
 
-import { OPENING_LIBRARY } from '../data/openingLibrary';
+import { OPENING_LIBRARY } from '../../../shared/openingLibrary';
 
 export interface OpeningEntry {
   eco: string;

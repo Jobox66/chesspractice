@@ -7,7 +7,7 @@
 //   WebSocket (and POST /chapter for new chapters), cards keyed by
 //   username. Offline chapters are kept on the phone, untouched.
 import { create } from 'zustand';
-import { OPENING_LIBRARY } from '../data/openingLibrary';
+import { OPENING_LIBRARY } from '../../../shared/openingLibrary';
 import type { Card } from '../core/srs';
 import { deleteNodeAt, nodeAtPathOrNull } from '../core/tree';
 import { chapterFromPgn, parseChapters, sortChapters, withCounts } from '../core/training';

@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { XIcon, UploadIcon, CheckCircle2, CloudAlertIcon, Check, Plus } from 'lucide-react';
 import { useTrainerStore } from '../../store/state';
 import { chapterFromImport, chapterFromPgn } from '../../util/io';
-import { OPENING_LIBRARY, type LibraryEntry } from '../../data/openingLibrary';
+import { OPENING_LIBRARY, type LibraryEntry } from '../../../../shared/openingLibrary';
 import { useAuthStore } from '../../store/auth';
 import './modals.css';
 import './AddToRepertoireModal.css';

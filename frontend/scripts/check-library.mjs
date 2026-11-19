@@ -1,4 +1,4 @@
-// Cross-checks the built-in opening library (src/data/openingLibrary.ts)
+// Cross-checks the built-in opening library (shared/openingLibrary.ts)
 // against the Lichess opening explorer and writes a report.
 //
 //   cd frontend
@@ -21,7 +21,7 @@ import { Chess } from 'chessops/chess';
 import { makeFen } from 'chessops/fen';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { OPENING_LIBRARY } from '../src/data/openingLibrary.ts';
+import { OPENING_LIBRARY } from '../../shared/openingLibrary.ts';
 
 const BASE = (process.env.EXPLORER_URL || 'https://explorer.lichess.ovh').replace(/\/$/, '');
 const TOKEN = process.env.LICHESS_TOKEN;

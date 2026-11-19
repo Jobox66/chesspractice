@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { File } from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { OPENING_LIBRARY } from '../data/openingLibrary';
+import { OPENING_LIBRARY } from '../../../shared/openingLibrary';
 import { chapterFromPgn } from '../core/training';
 import type { Color } from '../core/types';
 import { useApp } from '../store/app';

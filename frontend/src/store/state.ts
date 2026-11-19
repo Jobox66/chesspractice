@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, StateStorage } from 'zustand/middleware';
+import { persist, type PersistStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 
 import { Config as CbConfig } from 'chessground/config';
@@ -228,7 +228,7 @@ async function deleteChapterIDB(cid: string) {
 }
 
 // --- IndexedDB storage for zustand/persist (keep small) ---
-const indexedDBStorage: StateStorage = {
+const indexedDBStorage: PersistStorage<object> = {
   getItem: async (name) => {
     const value = await get(name);
     return value ?? null;
@@ -1008,7 +1008,7 @@ export const useTrainerStore = create<TrainerState>()(
 
           //TODO do we have to save chapter here..?
           //TODO factor out makeMove ??
-          const newNode: TrainableNode = {
+          const newNode = {
             data: {
               training: {},
               enabled: !disabled, //TODO
@@ -1019,7 +1019,7 @@ export const useTrainerStore = create<TrainerState>()(
               comment: '',
             },
             children: [],
-          };
+          } as TrainableNode;
 
           // console.log('NEW NODE', newNode);
 

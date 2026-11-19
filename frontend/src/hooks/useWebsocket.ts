@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTrainerStore } from '../store/state';
+import type { TrainableNode } from '../types/training';
 
 const API_URL: string = import.meta.env.VITE_API_URL;
 // VITE_WS_URL points the socket straight at the backend host. Needed on
@@ -132,7 +133,7 @@ export function useWebsocket() {
             removeConnectedUser(payload.user.username);
             break;
           case 'move_created':
-            addMove(payload.chapterId, payload.path, { data: payload.move, children: [] });
+            addMove(payload.chapterId, payload.path, { data: payload.move, children: [] } as TrainableNode);
             break;
           case 'reload':
             void resyncAndRestore();

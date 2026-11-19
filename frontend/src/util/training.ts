@@ -67,11 +67,10 @@ export const pgnFromChapter = (chapter: Chapter): string => {
   headers.set('ChesspracticeChapterName', chapter.name);
 
   const pos = startingPosition(defaultHeaders()).unwrap();
-  const annotatedMoves = transform(chapter.root, pos, (pos, node) => {
-    const newNode = { ...node };
-    newNode.comments = node.comment ? [node.comment] : null;
-    return newNode;
-  });
+  const annotatedMoves = transform(chapter.root, pos, (pos, node) => ({
+    ...node,
+    comments: node.comment ? [node.comment] : undefined,
+  }));
   const game = {
     headers,
     moves: annotatedMoves,

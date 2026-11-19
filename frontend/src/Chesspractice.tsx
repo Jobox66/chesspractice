@@ -22,7 +22,6 @@ import PgnControls from './components/pgn/TreeControls';
 import PgnTree from './components/pgn/Tree';
 import { INITIAL_BOARD_FEN, parseFen } from 'chessops/fen';
 import { parseSan } from 'chessops/san';
-import { MantineProvider } from '@mantine/core';
 import { formatTime } from './util/time';
 import {
   ClipboardCheck,
@@ -502,7 +501,7 @@ export const Chesspractice = () => {
 
   //TODO dont try to calculate properties when we haven't initialized the repertoire yet
   return (
-    <MantineProvider>
+    <>
       {/* <Debug /> */}
       <div className="app-root">
         <Header
@@ -585,7 +584,6 @@ export const Chesspractice = () => {
               <div ref={containerRef}>
                 <Chessground
                   dimensionsRef={boardCardRef}
-                  orientation={chapter?.trainAs || 'white'}
                   fen={selectedNode?.data.fen || initial}
                   turnColor={turn}
                   lastMove={lastMoveUci}
@@ -601,7 +599,6 @@ export const Chesspractice = () => {
                   <PromotionOverlay
                     dest={pendingPromo.to}
                     color={promotionColorFromFen(pendingPromo.fenBefore)}
-                    orientation={chapter?.trainAs || 'white'}
                     onCancel={closePromo}
                     requiredRole={
                       showsLearnArrow
@@ -739,7 +736,7 @@ export const Chesspractice = () => {
           <div className="time-reward-label">+{box.time}</div>
         </div>
       )}
-    </MantineProvider>
+    </>
   );
 };
 

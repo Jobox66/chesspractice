@@ -19,6 +19,7 @@ on:
     branches: [main]
     paths:
       - 'mobile/**'
+      - 'shared/**'
       - '.github/workflows/android.yml'
 
 concurrency:

@@ -1,7 +1,6 @@
 //TODO remove 
 
-import { Chart } from 'chart.js';
-import { Color } from '../training/types';
+import { Color } from 'chessops';
 import { Key, MoveMetadata } from 'chessground/types';
 
 //TODO better organizatoin of types
@@ -20,12 +19,6 @@ export interface ToastPopup {
   header: string;
   message: string;
 }
-
-export interface BarChart extends Chart {
-  updateData(d: BarData): void;
-}
-
-export interface BarData {}
 
 //Dont do this?? Remember each node has FEN
 export interface PgnViewContext {

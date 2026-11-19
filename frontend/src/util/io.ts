@@ -1,5 +1,6 @@
 import { Game, Node, parsePgn, PgnNodeData, transform } from 'chessops/pgn';
-import { Chapter, Color, TrainableNode, TrainingConfig, TrainingData } from '../types/training';
+import { Color } from 'chessops';
+import { Chapter, TrainableNode, TrainingData } from '../types/training';
 import { pgnFromChapter, trainingContext } from './training';
 import { INITIAL_BOARD_FEN, makeFen } from 'chessops/fen';
 import { parseSan } from 'chessops/san';
@@ -87,7 +88,7 @@ export const chapterFromPgn = (rawPgn: string, asColor: Color, name: string): Ch
         training: {},
       },
       children: moves.children,
-    },
+    } as TrainableNode,
     enabledCount,
     unseenCount: enabledCount, //TODO have the option to mark all nodes as already seen
     lastDueCount: 0, //TODO
