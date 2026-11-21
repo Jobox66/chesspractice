@@ -64,7 +64,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const byEnded = (a: Game, b: Game) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt);
 
 function opponentGo(elo: number): string {
-  return elo < MIN_UCI_ELO ? `depth ${lowSkill(elo) + 1} movetime 250` : 'movetime 350';
+  if (elo < 1200) return 'movetime 300';
+  if (elo < 1500) return 'movetime 450';
+  if (elo < 1800) return 'movetime 650';
+  return 'movetime 900';
 }
 
 function engineStrength(elo: number) {
